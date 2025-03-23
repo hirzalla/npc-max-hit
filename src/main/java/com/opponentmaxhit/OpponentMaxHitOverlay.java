@@ -5,6 +5,7 @@ import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.PanelComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
 import net.runelite.client.ui.overlay.components.LineComponent;
+
 import java.awt.*;
 import javax.inject.Inject;
 
@@ -21,6 +22,11 @@ public class OpponentMaxHitOverlay extends Overlay {
 
     public void updateMonsterData(OpponentMaxHitData data) {
         this.currentMonster = data;
+    }
+
+    // get current monster name
+    public String getCurrentMonsterName() {
+        return currentMonster.getMonsterName();
     }
 
     @Override

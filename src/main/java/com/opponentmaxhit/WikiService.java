@@ -21,7 +21,8 @@ import java.util.regex.Pattern;
 @Slf4j
 @Singleton
 public class WikiService {
-    private static final String WIKI_API_URL = "https://oldschool.runescape.wiki/api.php?action=parse&page=%s&prop=wikitext&format=json";
+    private static final String WIKI_ID_API_URL = "https://oldschool.runescape.wiki/api.php?action=parse&curid=%d&prop=wikitext&format=json";
+    private static final String WIKI_NAME_API_URL = "https://oldschool.runescape.wiki/api.php?action=parse&page=%s&prop=wikitext&format=json";
     private static final Pattern MAX_HIT_PATTERN = Pattern.compile("\\|\\s*max hit\\s*=\\s*([^\\n|]+)");
     private static final Pattern MAX_HIT_VALUE_PATTERN = Pattern.compile("(\\d+)\\s*\\(([^)]+)\\)");
     private static final Pattern VERSION_NAME_PATTERN = Pattern.compile("\\|version(\\d+)\\s*=\\s*([^\\n|]+)");
@@ -41,7 +42,7 @@ public class WikiService {
         try {
             String encodedName = URLEncoder.encode(monsterName, StandardCharsets.UTF_8);
             Request request = new Request.Builder()
-                    .url(String.format(WIKI_API_URL, encodedName))
+                    .url(String.format(WIKI_NAME_API_URL, encodedName))
                     .build();
 
             try (Response response = httpClient.newCall(request).execute()) {
@@ -97,7 +98,8 @@ public class WikiService {
                         try {
                             int value = Integer.parseInt(hit);
                             maxHits.put("Base", value);
-                        } catch (NumberFormatException ignored) {}
+                        } catch (NumberFormatException ignored) {
+                        }
                     }
                 }
             } else {
@@ -122,7 +124,8 @@ public class WikiService {
                             if (value > highestValue) {
                                 highestValue = value;
                             }
-                        } catch (NumberFormatException ignored) {}
+                        } catch (NumberFormatException ignored) {
+                        }
                     }
                 }
 
@@ -160,7 +163,8 @@ public class WikiService {
                         if (value > highestValue) {
                             highestValue = value;
                         }
-                    } catch (NumberFormatException ignored) {}
+                    } catch (NumberFormatException ignored) {
+                    }
                 }
             }
 
@@ -168,5 +172,6 @@ public class WikiService {
             maxHits.put(key, highestValue);
         }
 
-        return maxHits.isEmpty() ? null : new OpponentMaxHitData(monsterName, maxHits);    }
+        return maxHits.isEmpty() ? null : new OpponentMaxHitData(monsterName, maxHits);
+    }
 }

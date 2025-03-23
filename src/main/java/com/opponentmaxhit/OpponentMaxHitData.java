@@ -8,6 +8,7 @@ import lombok.Value;
 
 @Value
 public class OpponentMaxHitData {
+    @Getter
     private final String monsterName;
     @Getter
     private final Map<String, Integer> allMaxHits;

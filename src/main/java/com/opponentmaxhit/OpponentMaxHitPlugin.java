@@ -34,7 +34,6 @@ public class OpponentMaxHitPlugin extends Plugin {
     @Inject
     private WikiService wikiService;
 
-
     @Inject
     private OpponentMaxHitOverlay overlay;
 
@@ -45,9 +44,9 @@ public class OpponentMaxHitPlugin extends Plugin {
     protected void startUp() throws Exception {
         overlayManager.add(overlay);
         // For testing (last one applies
-        wikiService.getMaxHitData("Zulrah").ifPresent(overlay::updateMonsterData);
-        wikiService.getMaxHitData("Araxxor").ifPresent(overlay::updateMonsterData);
-        wikiService.getMaxHitData("Phantom Muspah").ifPresent(overlay::updateMonsterData);
+//        wikiService.getMaxHitData("Zulrah").ifPresent(overlay::updateMonsterData);
+//        wikiService.getMaxHitData("Araxxor").ifPresent(overlay::updateMonsterData);
+//        wikiService.getMaxHitData("Phantom Muspah").ifPresent(overlay::updateMonsterData);
 
     }
 
