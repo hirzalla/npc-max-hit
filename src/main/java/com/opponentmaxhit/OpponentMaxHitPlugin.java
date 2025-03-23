@@ -4,18 +4,19 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.HitsplatApplied;
-import net.runelite.api.events.NpcDespawned;
+import net.runelite.api.events.*;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.callback.ClientThread;
+import net.runelite.client.task.Schedule;
 
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -26,10 +27,15 @@ import java.util.concurrent.TimeUnit;
 )
 public class OpponentMaxHitPlugin extends Plugin {
     private Actor player;
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private ScheduledFuture<?> scheduledTask;
+    private long lastHitsplatTime = 0;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+
     @Inject
     private Client client;
+
+    @Inject
+    private ClientThread clientThread;
 
     @Inject
     private WikiService wikiService;
@@ -44,40 +50,81 @@ public class OpponentMaxHitPlugin extends Plugin {
     protected void startUp() throws Exception {
         overlayManager.add(overlay);
         // For testing (last one applies
-//        wikiService.getMaxHitData("Zulrah").ifPresent(overlay::updateMonsterData);
-//        wikiService.getMaxHitData("Araxxor").ifPresent(overlay::updateMonsterData);
-//        wikiService.getMaxHitData("Phantom Muspah").ifPresent(overlay::updateMonsterData);
+        wikiService.getMaxHitData("Goblin").ifPresent(overlay::updateMonsterData);
+        wikiService.getMaxHitData("Giant spider").ifPresent(overlay::updateMonsterData);
+        wikiService.getMaxHitData("Zulrah").ifPresent(overlay::updateMonsterData);
+        wikiService.getMaxHitData("Araxxor").ifPresent(overlay::updateMonsterData);
+        wikiService.getMaxHitData("Phantom Muspah").ifPresent(overlay::updateMonsterData);
 
+
+    }
+
+    @Override
+    protected void shutDown() {
+        overlayManager.remove(overlay);
+        overlay.updateMonsterData(null);
+
+        try {
+            executor.shutdownNow();
+            if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
+                log.warn("Executor didn't terminate in the specified time.");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("Executor shutdown interrupted", e);
+        }
     }
 
     @Subscribe
     public void onHitsplatApplied(HitsplatApplied event) {
-
         Actor actor = event.getActor();
         Hitsplat hitsplat = event.getHitsplat();
-        // check the actor interface type
-        if (!(event.getActor() instanceof NPC) || !hitsplat.isMine()) {
+
+        log.info("Hitsplat applied: " + hitsplat.getHitsplatType() + " to " + actor.getName());
+        log.info("Hitsplat isMine: " + hitsplat.isMine());
+
+        if (!(actor instanceof NPC) || !hitsplat.isMine()) {
             return;
         }
 
-        // Cancel the previous task if it exists
-        if (scheduledTask != null && !scheduledTask.isDone()) {
-            scheduledTask.cancel(false);
+        lastHitsplatTime = System.currentTimeMillis();
+        log.info("valid Hitsplat time: " + lastHitsplatTime);
+
+        // Capture the actor name before submitting to executor
+        final String monsterName = actor.getName();
+        
+        // Run wiki request in background
+        executor.submit(() -> {
+            log.info("Getting max hit data for " + monsterName);
+            Optional<OpponentMaxHitData> data = wikiService.getMaxHitData(monsterName);
+            data.ifPresent(monsterData -> {
+                log.info("Got max hit data for " + monsterName + ": " + monsterData.getHighestMaxHit());
+                clientThread.invoke(() -> overlay.updateMonsterData(monsterData));
+                }
+            );
+        });
+    }
+
+    @Subscribe
+    public void onGameTick(GameTick tick) {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastHitsplatTime >= 6000 && overlay.getCurrentMonsterName() != null) {
+            clientThread.invoke(() -> {
+                overlay.updateMonsterData(null);
+                log.debug("Overlay cleared after 6 seconds of inactivity");
+            });
         }
-        int id = ((NPC) actor).getId();
-        if (actor.isDead()) {
-            log.debug("dead boy");
+    }
+
+    @Subscribe
+    public void onInteractingChanged(InteractingChanged interactingChanged){
+        Actor source = interactingChanged.getSource();
+        Actor target = interactingChanged.getTarget();
+        if (source == null || target == null) {
+            return;
         }
+       log.info("Interacting changed: " + source.getName() + " -> " + target.getName());
 
-        log.debug("onHitsplatApplied on " + actor.getName() + " " + id + " with hitsplat type " + event.getHitsplat().getHitsplatType());
-        wikiService.getMaxHitData(actor.getName()).ifPresent(overlay::updateMonsterData);
-
-
-        // Schedule the overlay to be cleared after 5 seconds
-        scheduledTask = scheduler.schedule(() -> {
-            overlay.updateMonsterData(null);
-            log.debug("Overlay cleared after 5 seconds");
-        }, 3, TimeUnit.SECONDS);
     }
 
     @Subscribe
@@ -85,26 +132,6 @@ public class OpponentMaxHitPlugin extends Plugin {
         if (gameStateChanged.getGameState() == GameState.LOGGED_IN) {
             player = client.getLocalPlayer();
         }
-    }
-
-    @Subscribe
-    public void onNpcDespawned(NpcDespawned event) {
-        Actor actor = event.getActor();
-        NPC npc = event.getNpc();
-
-//        log.debug("onNpcDespawned on " + actor.getName() + " killed " + npc.getName());
-
-        if (actor == player && event.getActor().getName().equals(overlay.getCurrentMonsterName())) {
-            // clear overlay after 5 ticks
-
-            overlay.updateMonsterData(null);
-        }
-    }
-
-
-    @Override
-    protected void shutDown() {
-        overlayManager.remove(overlay);
     }
 
     @Provides

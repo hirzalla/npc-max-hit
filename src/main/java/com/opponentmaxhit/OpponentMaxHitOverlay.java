@@ -26,7 +26,7 @@ public class OpponentMaxHitOverlay extends Overlay {
 
     // get current monster name
     public String getCurrentMonsterName() {
-        return currentMonster.getMonsterName();
+        return currentMonster != null ? currentMonster.getMonsterName() : null;
     }
 
     @Override

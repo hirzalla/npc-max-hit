@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,6 +31,16 @@ public class WikiService {
 
     @Inject
     private OkHttpClient httpClient;
+
+    @Inject
+    private void init() {
+        // Configure OkHttpClient with timeout
+        httpClient = new OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.SECONDS)
+            .writeTimeout(10, TimeUnit.SECONDS)
+            .build();
+    }
 
     private final Map<String, OpponentMaxHitData> maxHitCache = new HashMap<>();
 
@@ -47,11 +58,18 @@ public class WikiService {
 
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful() || response.body() == null) {
+                    log.debug("Failed to fetch wiki data for {}: {}", monsterName, response.code());
                     return Optional.empty();
                 }
 
                 String responseBody = response.body().string();
                 JsonObject jsonResponse = new Gson().fromJson(responseBody, JsonObject.class);
+
+                if (!jsonResponse.has("parse") || !jsonResponse.getAsJsonObject("parse").has("wikitext")) {
+                    log.debug("Invalid wiki response for {}", monsterName);
+                    return Optional.empty();
+                }
+
                 String wikitext = jsonResponse.getAsJsonObject("parse")
                         .getAsJsonObject("wikitext")
                         .get("*").getAsString();
@@ -62,8 +80,8 @@ public class WikiService {
                     return Optional.of(data);
                 }
             }
-        } catch (IOException e) {
-            log.error("Error fetching wiki data for " + monsterName, e);
+        } catch (Exception e) {
+            log.debug("Error fetching wiki data for {}: {}", monsterName, e.getMessage());
         }
         return Optional.empty();
     }
