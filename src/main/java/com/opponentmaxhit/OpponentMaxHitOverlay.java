@@ -1,12 +1,14 @@
 package com.opponentmaxhit;
 
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics2D;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.PanelComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
 import net.runelite.client.ui.overlay.components.LineComponent;
 
-import java.awt.*;
 import javax.inject.Inject;
 
 public class OpponentMaxHitOverlay extends Overlay

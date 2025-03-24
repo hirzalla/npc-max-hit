@@ -1,11 +1,12 @@
 package com.opponentmaxhit;
 
+import java.awt.Color;
+import java.awt.Font;
+import net.runelite.client.config.Alpha;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
-
-import java.awt.*;
 
 @ConfigGroup("opponentmaxhit")
 public interface OpponentMaxHitConfig extends Config
@@ -121,7 +122,7 @@ public interface OpponentMaxHitConfig extends Config
 	)
 	default int fontSize()
 	{
-		return 12;
+		return 16;
 	}
 
 	@ConfigItem(
@@ -148,6 +149,7 @@ public interface OpponentMaxHitConfig extends Config
 		return Color.YELLOW;
 	}
 
+	@Alpha
 	@ConfigItem(
 		keyName = "overlayBackgroundColor",
 		name = "Background Color",
