@@ -1,4 +1,4 @@
-package com.opponentmaxhit;
+package com.npcmaxhit;
 
 import com.google.inject.Inject;
 import com.google.inject.Provides;
@@ -22,11 +22,11 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @PluginDescriptor(
-	name = "Opponent Max Hit",
+	name = "Npc Max Hit",
 	description = "Displays the max hit for non-player opponents",
-	tags = {"maxhit", "monster", "npc", "opponent", "hit", "damage", "overlay", "combat", "pvm", "pve", "max hit"}
+	tags = {"maxhit", "monster", "boss", "npc", "opponent", "hit", "damage", "overlay", "combat", "pvm", "pve", "max hit"}
 )
-public class OpponentMaxHitPlugin extends Plugin
+public class NpcMaxHitPlugin extends Plugin
 {
 	private Actor player;
 	private long lastHitsplatTime = 0;
@@ -43,7 +43,7 @@ public class OpponentMaxHitPlugin extends Plugin
 	private WikiService wikiService;
 
 	@Inject
-	private OpponentMaxHitOverlay overlay;
+	private NpcMaxHitOverlay overlay;
 
 	@Inject
 	private OverlayManager overlayManager;
@@ -55,18 +55,18 @@ public class OpponentMaxHitPlugin extends Plugin
 
 		// Test cases with specific NPC IDs
 		// 3017 Giant spider
-		wikiService.getMaxHitData("Giant spider", 3017).ifPresent(overlay::updateMonsterData);
-		wikiService.getMaxHitData("Goblin", 3029).ifPresent(overlay::updateMonsterData);
-		wikiService.getMaxHitData("Zulrah", 2042).ifPresent(overlay::updateMonsterData); // Green form
-		wikiService.getMaxHitData("Phantom Muspah", 12079).ifPresent(overlay::updateMonsterData);
-		wikiService.getMaxHitData("Duke Sucellus", 12191).ifPresent(overlay::updateMonsterData);
+		wikiService.getMaxHitData("Giant spider", 3017).ifPresent(overlay::updateNpcData);
+		wikiService.getMaxHitData("Goblin", 3029).ifPresent(overlay::updateNpcData);
+		wikiService.getMaxHitData("Zulrah", 2042).ifPresent(overlay::updateNpcData); // Green form
+		wikiService.getMaxHitData("Phantom Muspah", 12079).ifPresent(overlay::updateNpcData);
+		wikiService.getMaxHitData("Duke Sucellus", 12191).ifPresent(overlay::updateNpcData);
 	}
 
 	@Override
 	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
-		overlay.updateMonsterData(null);
+		overlay.updateNpcData(null);
 
 		try
 		{
@@ -97,20 +97,26 @@ public class OpponentMaxHitPlugin extends Plugin
 			return;
 		}
 
+		// if the overlay includes the same npc name and ID, return
+		if (overlay.getCurrentNpcName() != null && overlay.getCurrentNpcName().equals(actor.getName()) && ((NPC) actor).getId() == overlay.getCurrentNpcId())
+		{
+			return;
+		}
+
 		NPC npc = (NPC) actor;
 		lastHitsplatTime = System.currentTimeMillis();
 
 		// Capture both name and ID before submitting to executor
-		final String monsterName = actor.getName();
+		final String npcName = actor.getName();
 		final int npcId = npc.getId();
 
 		// Run wiki request in background
 		executor.submit(() -> {
-			log.info("Getting max hit data for {} (ID: {})", monsterName, npcId);
-			Optional<OpponentMaxHitData> data = wikiService.getMaxHitData(monsterName, npcId);
-			data.ifPresent(monsterData -> {
-					log.info("Got max hit data for {} (ID: {}): {}", monsterName, npcId, monsterData.getHighestMaxHit());
-					clientThread.invoke(() -> overlay.updateMonsterData(monsterData));
+			log.info("Getting max hit data for {} (ID: {})", npcName, npcId);
+			Optional<NpcMaxHitData> data = wikiService.getMaxHitData(npcName, npcId);
+			data.ifPresent(npcData -> {
+					log.info("Got max hit data for {} (ID: {}): {}", npcName, npcId, npcData.getHighestMaxHit());
+					clientThread.invoke(() -> overlay.updateNpcData(npcData));
 				}
 			);
 		});
@@ -120,10 +126,10 @@ public class OpponentMaxHitPlugin extends Plugin
 	public void onGameTick(GameTick tick)
 	{
 		long currentTime = System.currentTimeMillis();
-		if (currentTime - lastHitsplatTime >= 6000 && overlay.getCurrentMonsterName() != null)
+		if (currentTime - lastHitsplatTime >= 6000 && overlay.getCurrentNpcName() != null)
 		{
 			clientThread.invoke(() -> {
-				overlay.updateMonsterData(null);
+				overlay.updateNpcData(null);
 				log.debug("Overlay cleared after 6 seconds of inactivity");
 			});
 		}
@@ -139,8 +145,8 @@ public class OpponentMaxHitPlugin extends Plugin
 	}
 
 	@Provides
-	OpponentMaxHitConfig provideConfig(ConfigManager configManager)
+	NpcMaxHitConfig provideConfig(ConfigManager configManager)
 	{
-		return configManager.getConfig(OpponentMaxHitConfig.class);
+		return configManager.getConfig(NpcMaxHitConfig.class);
 	}
 }

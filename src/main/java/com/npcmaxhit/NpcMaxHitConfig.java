@@ -1,15 +1,16 @@
-package com.opponentmaxhit;
+package com.npcmaxhit;
 
 import java.awt.Color;
 import java.awt.Font;
+import lombok.Getter;
 import net.runelite.client.config.Alpha;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 
-@ConfigGroup("opponentmaxhit")
-public interface OpponentMaxHitConfig extends Config
+@ConfigGroup("npcmaxhit")
+public interface NpcMaxHitConfig extends Config
 {
 	@ConfigSection(
 		name = "General",
@@ -51,8 +52,8 @@ public interface OpponentMaxHitConfig extends Config
 
 	@ConfigItem(
 		keyName = "fontFamily",
-		name = "Font Family",
-		description = "Font family to use in the overlay",
+		name = "Font",
+		description = "Font to use in the overlay",
 		section = overlaySection,
 		position = 93
 	)
@@ -61,6 +62,7 @@ public interface OpponentMaxHitConfig extends Config
 		return FontFamily.REGULAR;
 	}
 
+	@Getter
 	enum FontFamily
 	{
 		REGULAR("RuneScape"),
@@ -75,10 +77,6 @@ public interface OpponentMaxHitConfig extends Config
 			this.family = family;
 		}
 
-		public String getFamily()
-		{
-			return family;
-		}
 	}
 
 	@ConfigItem(
@@ -93,6 +91,7 @@ public interface OpponentMaxHitConfig extends Config
 		return FontStyle.PLAIN;
 	}
 
+	@Getter
 	enum FontStyle
 	{
 		PLAIN(Font.PLAIN),
@@ -107,10 +106,6 @@ public interface OpponentMaxHitConfig extends Config
 			this.style = style;
 		}
 
-		public int getStyle()
-		{
-			return style;
-		}
 	}
 
 	@ConfigItem(
@@ -128,7 +123,7 @@ public interface OpponentMaxHitConfig extends Config
 	@ConfigItem(
 		keyName = "titleColor",
 		name = "Title Color",
-		description = "Color of the monster name in the overlay",
+		description = "Color of the NPC name in the overlay",
 		section = overlaySection,
 		position = 96
 	)

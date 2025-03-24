@@ -1,4 +1,4 @@
-package com.opponentmaxhit;
+package com.npcmaxhit;
 
 import java.awt.Dimension;
 import java.awt.Font;
@@ -11,34 +11,40 @@ import net.runelite.client.ui.overlay.components.LineComponent;
 
 import javax.inject.Inject;
 
-public class OpponentMaxHitOverlay extends Overlay
+public class NpcMaxHitOverlay extends Overlay
 {
 	private final PanelComponent panelComponent = new PanelComponent();
-	private final OpponentMaxHitConfig config;
-	private OpponentMaxHitData currentMonster;
+	private final NpcMaxHitConfig config;
+	private NpcMaxHitData currentNpc;
 
 	@Inject
-	public OpponentMaxHitOverlay(OpponentMaxHitConfig config)
+	public NpcMaxHitOverlay(NpcMaxHitConfig config)
 	{
 		this.config = config;
 		panelComponent.setPreferredSize(new Dimension(150, 0));
 	}
 
-	public void updateMonsterData(OpponentMaxHitData data)
+	public void updateNpcData(NpcMaxHitData data)
 	{
-		this.currentMonster = data;
+		this.currentNpc = data;
 	}
 
-	// get current monster name
-	public String getCurrentMonsterName()
+	// get current npc name
+	public String getCurrentNpcName()
 	{
-		return currentMonster != null ? currentMonster.getMonsterName() : null;
+		return currentNpc != null ? currentNpc.getNpcName() : null;
+	}
+
+	// get current npc ID
+	public int getCurrentNpcId()
+	{
+		return currentNpc != null ? currentNpc.getNpcId() : -1;
 	}
 
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
-		if (currentMonster == null || !config.showOverlay())
+		if (currentNpc == null || !config.showOverlay())
 		{
 			return null;
 		}
@@ -55,8 +61,14 @@ public class OpponentMaxHitOverlay extends Overlay
 		));
 
 		// Add title with NPC ID
+		String[] npcNameAndVersion = currentNpc.getNpcName().replaceAll("_", " ").split("#");
+		String npcName = npcNameAndVersion[0];
+		// for testing
+		String npcVersion = npcNameAndVersion.length > 1 ? npcNameAndVersion[1] : "";
+		int npcId = currentNpc.getNpcId();
+		
 		panelComponent.getChildren().add(TitleComponent.builder()
-			.text(currentMonster.getMonsterName().split("#")[0].replaceAll("_", " ") + " #" + currentMonster.getNpcId())
+			.text(npcName)
 			.color(config.titleColor())
 			.build());
 
@@ -65,7 +77,7 @@ public class OpponentMaxHitOverlay extends Overlay
 		{
 			panelComponent.getChildren().add(LineComponent.builder()
 				.left("Max Hit")
-				.right(Integer.toString(currentMonster.getHighestMaxHit()))
+				.right(Integer.toString(currentNpc.getHighestMaxHit()))
 				.leftColor(config.textColor())
 				.rightColor(config.textColor())
 				.build());
@@ -73,7 +85,7 @@ public class OpponentMaxHitOverlay extends Overlay
 		else
 		{
 			// Show all combat style variations
-			currentMonster.getMaxHits().forEach((style, hit) ->
+			currentNpc.getMaxHits().forEach((style, hit) ->
 				panelComponent.getChildren().add(LineComponent.builder()
 					.left(style)
 					.right(Integer.toString(hit))

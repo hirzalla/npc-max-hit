@@ -1,13 +1,13 @@
-package com.opponentmaxhit;
+package com.npcmaxhit;
 
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 
-public class OpponentMaxHitPluginTest
+public class NpcMaxHitPluginTest
 {
 	public static void main(String[] args) throws Exception
 	{
-		ExternalPluginManager.loadBuiltin(OpponentMaxHitPlugin.class);
+		ExternalPluginManager.loadBuiltin(NpcMaxHitPlugin.class);
 		RuneLite.main(args);
 	}
 }

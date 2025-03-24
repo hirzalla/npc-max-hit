@@ -1,4 +1,4 @@
-# Opponent Max Hit Plugin
+# Npc Max Hit Plugin
 
 A RuneLite plugin that displays the maximum hit values for non-player opponents by fetching data from the OSRS Wiki.
 
@@ -12,9 +12,11 @@ A RuneLite plugin that displays the maximum hit values for non-player opponents 
 ## Configuration
 
 ### General Settings
+
 - **Show Overlay**: Toggle the max hit display on/off
 
 ### Overlay Settings
+
 - **Compact Mode**: Show only the highest max hit instead of all variants
 - **Font Settings**: Customize font family, style, and size
 - **Colors**: Customize title, text, and background colors
