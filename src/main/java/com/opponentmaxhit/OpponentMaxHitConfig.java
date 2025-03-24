@@ -50,7 +50,7 @@ public interface OpponentMaxHitConfig extends Config
     @ConfigItem(
             keyName = "compact",
             name = "Compact Mode",
-            description = "Show overlay in a more compact format",
+            description = "Only show the _highest_ max hit value when multiple attack styles are present",
             section = overlaySection,
             position = 0
     )
@@ -126,7 +126,7 @@ public interface OpponentMaxHitConfig extends Config
     )
     default int fontSize()
     {
-        return 16;
+        return 12;
     }
 
     @ConfigItem(

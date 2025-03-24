@@ -49,14 +49,14 @@ public class OpponentMaxHitPlugin extends Plugin {
     @Override
     protected void startUp() throws Exception {
         overlayManager.add(overlay);
-        // For testing (last one applies
-        wikiService.getMaxHitData("Goblin").ifPresent(overlay::updateMonsterData);
-        wikiService.getMaxHitData("Giant spider").ifPresent(overlay::updateMonsterData);
-        wikiService.getMaxHitData("Zulrah").ifPresent(overlay::updateMonsterData);
-        wikiService.getMaxHitData("Araxxor").ifPresent(overlay::updateMonsterData);
-        wikiService.getMaxHitData("Phantom Muspah").ifPresent(overlay::updateMonsterData);
-
-
+        
+        // Test cases with specific NPC IDs
+        // 3017 Giant spider
+        wikiService.getMaxHitData("Giant spider", 3017).ifPresent(overlay::updateMonsterData);
+        wikiService.getMaxHitData("Goblin", 3029).ifPresent(overlay::updateMonsterData);
+        wikiService.getMaxHitData("Zulrah", 2042).ifPresent(overlay::updateMonsterData); // Green form
+        wikiService.getMaxHitData("Phantom Muspah", 12079).ifPresent(overlay::updateMonsterData);
+        wikiService.getMaxHitData("Duke Sucellus", 12191).ifPresent(overlay::updateMonsterData);
     }
 
     @Override
@@ -87,18 +87,19 @@ public class OpponentMaxHitPlugin extends Plugin {
             return;
         }
 
+        NPC npc = (NPC) actor;
         lastHitsplatTime = System.currentTimeMillis();
-        log.info("valid Hitsplat time: " + lastHitsplatTime);
-
-        // Capture the actor name before submitting to executor
+        
+        // Capture both name and ID before submitting to executor
         final String monsterName = actor.getName();
+        final int npcId = npc.getId();
         
         // Run wiki request in background
         executor.submit(() -> {
-            log.info("Getting max hit data for " + monsterName);
-            Optional<OpponentMaxHitData> data = wikiService.getMaxHitData(monsterName);
+            log.info("Getting max hit data for {} (ID: {})", monsterName, npcId);
+            Optional<OpponentMaxHitData> data = wikiService.getMaxHitData(monsterName, npcId);
             data.ifPresent(monsterData -> {
-                log.info("Got max hit data for " + monsterName + ": " + monsterData.getHighestMaxHit());
+                log.info("Got max hit data for {} (ID: {}): {}", monsterName, npcId, monsterData.getHighestMaxHit());
                 clientThread.invoke(() -> overlay.updateMonsterData(monsterData));
                 }
             );
@@ -114,17 +115,6 @@ public class OpponentMaxHitPlugin extends Plugin {
                 log.debug("Overlay cleared after 6 seconds of inactivity");
             });
         }
-    }
-
-    @Subscribe
-    public void onInteractingChanged(InteractingChanged interactingChanged){
-        Actor source = interactingChanged.getSource();
-        Actor target = interactingChanged.getTarget();
-        if (source == null || target == null) {
-            return;
-        }
-       log.info("Interacting changed: " + source.getName() + " -> " + target.getName());
-
     }
 
     @Subscribe

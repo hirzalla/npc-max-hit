@@ -46,15 +46,14 @@ public class OpponentMaxHitOverlay extends Overlay {
                 config.fontSize()
         ));
 
-        // Add title
+        // Add title with NPC ID
         panelComponent.getChildren().add(TitleComponent.builder()
-                .text(currentMonster.getMonsterName())
+                .text(currentMonster.getMonsterName().split("#")[0].replaceAll("_", " ") + " #" + currentMonster.getNpcId())
                 .color(config.titleColor())
                 .build());
 
         // Add max hits based on compact mode
         if (config.compact()) {
-            // Show only highest max hit
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("Max Hit")
                     .right(Integer.toString(currentMonster.getHighestMaxHit()))
@@ -62,10 +61,10 @@ public class OpponentMaxHitOverlay extends Overlay {
                     .rightColor(config.textColor())
                     .build());
         } else {
-            // Show all max hits
-            currentMonster.getAllMaxHits().forEach((version, hit) ->
+            // Show all combat style variations
+            currentMonster.getMaxHits().forEach((style, hit) ->
                     panelComponent.getChildren().add(LineComponent.builder()
-                            .left(version)
+                            .left(style)
                             .right(Integer.toString(hit))
                             .leftColor(config.textColor())
                             .rightColor(config.textColor())
