@@ -95,7 +95,7 @@ public class WikiService
 				if (!maxHits.isEmpty())
 				{
 					NpcMaxHitData data = new NpcMaxHitData(pageName, npcId, maxHits);
-					log.info("Fetched highest max hit data for {} (ID: {}): {}", pageName, npcId, data.getHighestMaxHit());
+					log.debug("Fetched highest max hit data for {} (ID: {}): {}", pageName, npcId, data.getHighestMaxHit());
 					maxHitCache.put(npcId, data);
 					return Optional.of(data);
 				}

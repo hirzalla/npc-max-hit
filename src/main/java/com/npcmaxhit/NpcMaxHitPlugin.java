@@ -89,8 +89,8 @@ public class NpcMaxHitPlugin extends Plugin
 		Actor actor = event.getActor();
 		Hitsplat hitsplat = event.getHitsplat();
 
-		log.info("Hitsplat applied: " + hitsplat.getHitsplatType() + " to " + actor.getName());
-		log.info("Hitsplat isMine: " + hitsplat.isMine());
+		log.debug("Hitsplat applied: " + hitsplat.getHitsplatType() + " to " + actor.getName());
+		log.debug("Hitsplat isMine: " + hitsplat.isMine());
 
 		if (!(actor instanceof NPC) || !hitsplat.isMine())
 		{
@@ -112,10 +112,10 @@ public class NpcMaxHitPlugin extends Plugin
 
 		// Run wiki request in background
 		executor.submit(() -> {
-			log.info("Getting max hit data for {} (ID: {})", npcName, npcId);
+			log.debug("Getting max hit data for {} (ID: {})", npcName, npcId);
 			Optional<NpcMaxHitData> data = wikiService.getMaxHitData(npcName, npcId);
 			data.ifPresent(npcData -> {
-					log.info("Got max hit data for {} (ID: {}): {}", npcName, npcId, npcData.getHighestMaxHit());
+					log.debug("Got max hit data for {} (ID: {}): {}", npcName, npcId, npcData.getHighestMaxHit());
 					clientThread.invoke(() -> overlay.updateNpcData(npcData));
 				}
 			);
