@@ -85,6 +85,7 @@ public class WikiService {
                 Map<String, Integer> maxHits = parseMaxHits(wikitext, npcId);
                 if (!maxHits.isEmpty()) {
                     OpponentMaxHitData data = new OpponentMaxHitData(pageName, npcId, maxHits);
+                    log.info("Fetched highest max hit data for {} (ID: {}): {}", pageName, npcId, data.getHighestMaxHit());
                     maxHitCache.put(npcId, data);
                     return Optional.of(data);
                 }

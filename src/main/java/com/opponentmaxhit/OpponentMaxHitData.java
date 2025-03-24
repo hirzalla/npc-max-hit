@@ -6,10 +6,11 @@ import java.util.TreeMap;
 import lombok.Value;
 
 @Value
-public class OpponentMaxHitData {
-    String monsterName;
-    int npcId;
-    Map<String, Integer> maxHits;
+public class OpponentMaxHitData
+{
+	String monsterName;
+	int npcId;
+	Map<String, Integer> maxHits;
 
     public OpponentMaxHitData(String monsterName, int npcId, Map<String, Integer> maxHits) {
         this.monsterName = monsterName;
