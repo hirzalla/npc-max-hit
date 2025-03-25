@@ -1,11 +1,11 @@
 package com.npcmaxhit;
 
-import com.google.inject.Inject;
 import com.google.inject.Provides;
-import java.util.Optional;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
@@ -66,15 +66,8 @@ public class NpcMaxHitPlugin extends Plugin
 	protected void startUp() throws Exception
 	{
 		executor = Executors.newSingleThreadExecutor();
+		overlay.updateNpcDataList(List.of());
 		overlayManager.add(overlay);
-
-		// testing
-//		wikiService.getMaxHitData("Giant spider", 3017).ifPresent(overlay::updateNpcData);
-//		wikiService.getMaxHitData("Goblin", 3029).ifPresent(overlay::updateNpcData);
-//		wikiService.getMaxHitData("Zulrah", 2042).ifPresent(overlay::updateNpcData); // Green form
-//		wikiService.getMaxHitData("Phantom Muspah", 12079).ifPresent(overlay::updateNpcData);
-//		wikiService.getMaxHitData("Araxxor", 13668).ifPresent(overlay::updateNpcData);
-//		wikiService.getMaxHitData("Duke Sucellus", 12191).ifPresent(overlay::updateNpcData);
 	}
 
 	@Override
@@ -82,7 +75,7 @@ public class NpcMaxHitPlugin extends Plugin
 	{
 		shutdownExecutor();
 		overlayManager.remove(overlay);
-		overlay.updateNpcData(null);
+		overlay.updateNpcDataList(List.of());
 		removeInfoBox();
 
 	}
@@ -117,12 +110,12 @@ public class NpcMaxHitPlugin extends Plugin
 		}
 	}
 
-	private void updateInfoBox(NpcMaxHitData data)
+	private void updateInfoBox(List<NpcMaxHitData> dataList)
 	{
 		removeInfoBox();
-		if (data != null)
+		if (!dataList.isEmpty())
 		{
-			infoBox = new NpcMaxHitInfoBox(data, config, spriteManager, this);
+			infoBox = new NpcMaxHitInfoBox(dataList, config, spriteManager, this);
 			infoBoxManager.addInfoBox(infoBox);
 		}
 	}
@@ -140,47 +133,43 @@ public class NpcMaxHitPlugin extends Plugin
 		}
 
 		NPC npc = (NPC) actor;
-		String npcName = npc.getName();
 		int npcId = npc.getId();
 
 		// Update last hitsplat time
 		lastHitsplatTime = System.currentTimeMillis();
 
-		// dont attempt to re-fetch data if the same npc is being attacked
-		if (overlay.getCurrentNpcName() != null && overlay.getCurrentNpcName().equals(npcName) && overlay.getCurrentNpcId() == npcId)
+		// dont attempt to re-fetch data if the same npc is being attacked and overlay includes the npc
+		if (player.getInteracting() == npc && overlay.getCurrentNpcList().stream().anyMatch(data -> data.getNpcId() == npcId))
 		{
 			return;
 		}
 
 		executor.submit(() -> {
-			Optional<NpcMaxHitData> data = wikiService.getMaxHitData(npcName, npcId);
-			data.ifPresent(npcData -> {
-					clientThread.invoke(() -> {
-						overlay.updateNpcData(npcData);
-						updateInfoBox(npcData);
-					});
-				}
-			);
+			List<NpcMaxHitData> dataList = wikiService.getMaxHitData(npcId);
+			if (!dataList.isEmpty())
+			{
+				clientThread.invoke(() -> {
+					overlay.updateNpcDataList(dataList);
+					updateInfoBox(dataList);
+				});
+			}
 		});
 	}
 
 	@Subscribe
 	public void onGameTick(GameTick tick)
 	{
-		if (overlay.getCurrentNpcName() == null || overlay.getCurrentNpcId() == -1)
-		{
-			return;
-		}
-
 		long currentTime = System.currentTimeMillis();
 		int timeoutMs = config.timeout() * 1000;
-
 		if (currentTime - lastHitsplatTime >= timeoutMs)
 		{
-			clientThread.invoke(() -> {
-				overlay.updateNpcData(null);
-				removeInfoBox();
-			});
+			if (!overlay.getCurrentNpcList().isEmpty())
+			{
+				clientThread.invoke(() -> {
+					overlay.updateNpcDataList(List.of());
+					removeInfoBox();
+				});
+			}
 		}
 	}
 
@@ -190,6 +179,29 @@ public class NpcMaxHitPlugin extends Plugin
 		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
 		{
 			player = client.getLocalPlayer();
+
+			// testing
+			/*executor.submit(() -> {
+				List<Integer> testNpcs = List.of(
+					2042,
+					12191,
+					12079,
+					13668
+				);
+
+				for (int npcId : testNpcs)
+				{
+					List<NpcMaxHitData> dataList = wikiService.getMaxHitData(npcId);
+					if (!dataList.isEmpty())
+					{
+						clientThread.invoke(() -> {
+							overlay.updateNpcDataList(dataList);
+							updateInfoBox(dataList);
+						});
+					}
+				}
+			});*/
+
 		}
 	}
 

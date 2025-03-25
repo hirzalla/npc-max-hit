@@ -1,18 +1,20 @@
 package com.npcmaxhit;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collections;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,14 +22,9 @@ import java.util.regex.Pattern;
 @Singleton
 public class WikiService
 {
-	private static final String WIKI_API_URL = "https://oldschool.runescape.wiki/api.php?action=parse&format=json&prop=wikitext&page=";
-	private static final String WIKI_LOOKUP_URL = "https://oldschool.runescape.wiki/w/Special:Lookup?type=npc&id=%d&name=%s";
-	private static final Pattern VERSION_PATTERN = Pattern.compile("\\|\\s*version(\\d+)\\s*=\\s*([^\\n|]+)");
-	private static final Pattern MAX_HIT_PATTERN = Pattern.compile("\\|\\s*max hit(\\d*)\\s*=\\s*([^\\n|]+)");
+	private static final String WIKI_API_URL = "https://oldschool.runescape.wiki/api.php?action=ask&format=json&query=[[NPC ID::%d]]|?Max hit";
 	private static final Pattern MAX_HIT_VALUE_PATTERN = Pattern.compile("(\\d+)\\s*\\(([^)]+)\\)");
-
-	private final Map<Integer, NpcMaxHitData> maxHitCache = new HashMap<>();
-	private final Map<Integer, String> npcNameCache = new HashMap<>();
+	private final Map<Integer, List<NpcMaxHitData>> maxHitCache = new HashMap<>();
 
 	@Inject
 	private OkHttpClient httpClient;
@@ -35,25 +32,17 @@ public class WikiService
 	@Inject
 	private Gson gson;
 
-	public Optional<NpcMaxHitData> getMaxHitData(String npcName, int npcId)
+	public List<NpcMaxHitData> getMaxHitData(int npcId)
 	{
 		// Check cache first
 		if (maxHitCache.containsKey(npcId))
 		{
-			return Optional.of(maxHitCache.get(npcId));
+			return maxHitCache.get(npcId);
 		}
 
 		try
 		{
-			// First try to get the canonical page name
-			String pageName = getCanonicalName(npcName, npcId);
-			if (pageName == null)
-			{
-				return Optional.empty();
-			}
-
-			String encodedPage = java.net.URLEncoder.encode(pageName, "UTF-8");
-			String url = WIKI_API_URL + encodedPage;
+			String url = String.format(WIKI_API_URL, npcId);
 
 			Request request = new Request.Builder()
 				.url(url)
@@ -64,176 +53,83 @@ public class WikiService
 			{
 				if (!response.isSuccessful() || response.body() == null)
 				{
-					return Optional.empty();
+					return Collections.emptyList();
 				}
 
 				String responseBody = response.body().string();
 				JsonObject jsonResponse = gson.fromJson(responseBody, JsonObject.class);
 
-				if (!jsonResponse.has("parse") || !jsonResponse.getAsJsonObject("parse").has("wikitext"))
+				if (!jsonResponse.has("query") || !jsonResponse.getAsJsonObject("query").has("results"))
 				{
-					return Optional.empty();
+					return Collections.emptyList();
 				}
 
-				String wikitext = jsonResponse.getAsJsonObject("parse")
-					.getAsJsonObject("wikitext")
-					.get("*").getAsString();
+				List<NpcMaxHitData> results = new ArrayList<>();
+				JsonObject resultsObj = jsonResponse.getAsJsonObject("query").getAsJsonObject("results");
 
-				Map<String, Integer> maxHits = parseMaxHits(wikitext, npcId);
-				if (!maxHits.isEmpty())
+				for (Map.Entry<String, JsonElement> entry : resultsObj.entrySet())
 				{
-					NpcMaxHitData data = new NpcMaxHitData(pageName, npcId, maxHits);
-					maxHitCache.put(npcId, data);
-					return Optional.of(data);
+					String fullName = entry.getKey();
+					JsonObject result = entry.getValue().getAsJsonObject();
+					JsonObject printouts = result.getAsJsonObject("printouts");
+
+					if (printouts.has("Max hit") && printouts.getAsJsonArray("Max hit").size() > 0)
+					{
+						Map<String, Integer> maxHits = new HashMap<>();
+						var maxHitArray = printouts.getAsJsonArray("Max hit");
+
+						if (maxHitArray.size() > 1)
+						{
+							// Process each element in the array directly
+							for (JsonElement maxHitElement : maxHitArray)
+							{
+								String maxHitString = maxHitElement.getAsString().trim();
+								parseMaxHitValues(maxHitString, maxHits);
+							}
+						}
+						else
+						{
+							// Single element - might contain multiple hits
+							String maxHitString = maxHitArray.get(0).getAsString();
+							parseMaxHitValues(maxHitString, maxHits);
+						}
+
+						if (!maxHits.isEmpty())
+						{
+							results.add(new NpcMaxHitData(fullName, npcId, maxHits));
+						}
+					}
+				}
+
+				if (!results.isEmpty())
+				{
+					maxHitCache.put(npcId, results);
+					return results;
 				}
 			}
 		}
 		catch (Exception e)
 		{
-			log.warn("Error fetching wiki data for {} (ID: {}): {}", npcName, npcId, e.getMessage());
+			log.warn("Error fetching wiki data for (ID: {}): {}", npcId, e.getMessage());
 		}
-		return Optional.empty();
+
+		return Collections.emptyList();
 	}
 
-	private String getCanonicalName(String npcName, int npcId)
+	private void parseMaxHitValues(String maxHitString, Map<String, Integer> maxHits)
 	{
-		if (npcNameCache.containsKey(npcId))
-		{
-			return npcNameCache.get(npcId);
-		}
-
-		try
-		{
-			String lookupUrl = String.format(WIKI_LOOKUP_URL, npcId,
-				java.net.URLEncoder.encode(npcName, "UTF-8"));
-
-			Request request = new Request.Builder()
-				.url(lookupUrl)
-				.build();
-
-			try (Response response = httpClient.newCall(request).execute())
-			{
-				if (!response.isSuccessful())
-				{
-					return null;
-				}
-
-				String finalUrl = response.request().url().toString();
-				// Extract the page name from the final URL
-				String pageName = finalUrl.substring(finalUrl.indexOf("/w/") + 3);
-				// URL decode the page name
-				pageName = java.net.URLDecoder.decode(pageName, "UTF-8");
-
-				// If there's a section (indicated by #), include it
-				// This helps differentiate between different forms of the same NPC
-				npcNameCache.put(npcId, pageName);
-				return pageName;
-			}
-		}
-		catch (Exception e)
-		{
-			log.warn("Error getting canonical name for {} (ID: {}): {}", npcName, npcId, e.getMessage());
-		}
-		return null;
-	}
-
-	private Map<String, Integer> parseMaxHits(String wikitext, int npcId)
-	{
-		Map<String, Integer> maxHits = new HashMap<>();
-		String versionName = null;
-		int versionNumber = -1;
-
-		// Check if the cached page name contains a version (after #)
-		String pageName = npcNameCache.get(npcId);
-		if (pageName != null && pageName.contains("#"))
-		{
-			versionName = pageName.substring(pageName.indexOf("#") + 1);
-			versionNumber = findVersionNumber(wikitext, versionName);
-		}
-
-		// Try to find version-specific max hit first
-		if (versionNumber > 0)
-		{
-			String versionSpecificMaxHits = findMaxHitForVersion(wikitext, versionNumber);
-			if (versionSpecificMaxHits != null)
-			{
-				parseMaxHitValues(versionSpecificMaxHits, maxHits);
-				return maxHits;
-			}
-		}
-
-		// Fall back to default max hit if no version-specific one found
-		String defaultMaxHits = findMaxHitForVersion(wikitext, 0);
-		if (defaultMaxHits != null)
-		{
-			parseMaxHitValues(defaultMaxHits, maxHits);
-		}
-
-		return maxHits;
-	}
-
-	private int findVersionNumber(String wikitext, String targetVersion)
-	{
-		// Normalize target version by replacing underscores with spaces and cleaning
-		String normalizedTarget = targetVersion.replace('_', ' ').replaceAll("[()]", "").trim();
-
-		Matcher versionMatcher = VERSION_PATTERN.matcher(wikitext);
-		while (versionMatcher.find())
-		{
-			int number = Integer.parseInt(versionMatcher.group(1));
-			String version = versionMatcher.group(2).trim();
-
-			// Normalize version from wiki by cleaning
-			String normalizedVersion = version.replaceAll("[()]", "").trim();
-
-			if (normalizedVersion.equalsIgnoreCase(normalizedTarget))
-			{
-				return number;
-			}
-		}
-
-		// If exact match fails, try matching just the level number
-		if (normalizedTarget.startsWith("Level"))
-		{
-			String targetLevel = normalizedTarget.substring("Level".length()).trim();
-			Matcher versionMatcher2 = VERSION_PATTERN.matcher(wikitext);
-
-			while (versionMatcher2.find())
-			{
-				int number = Integer.parseInt(versionMatcher2.group(1));
-				String version = versionMatcher2.group(2).trim();
-
-				if (version.contains(targetLevel))
-				{
-					return number;
-				}
-			}
-		}
-
-		return -1;
-	}
-
-	private String findMaxHitForVersion(String wikitext, int versionNumber)
-	{
-		String versionSuffix = versionNumber > 0 ? String.valueOf(versionNumber) : "";
-		Pattern pattern = Pattern.compile("\\|\\s*max hit" + versionSuffix + "\\s*=\\s*([^\\n|]+)");
-		Matcher matcher = pattern.matcher(wikitext);
-		return matcher.find() ? matcher.group(1).trim() : null;
-	}
-
-	private void parseMaxHitValues(String maxHitSection, Map<String, Integer> maxHits)
-	{
-		String[] hits = maxHitSection.split("(?:<br/?>|,)");
+		// Remove HTML line break tags and split on commas
+		String[] hits = maxHitString.replaceAll("<br/?>", ",").split(",");
 
 		for (String hit : hits)
 		{
-			hit = hit.trim().replaceAll("<[^>]+>", "");
+			hit = hit.trim();
+			Matcher matcher = MAX_HIT_VALUE_PATTERN.matcher(hit);
 
-			Matcher valueMatcher = MAX_HIT_VALUE_PATTERN.matcher(hit);
-			if (valueMatcher.find())
+			if (matcher.find())
 			{
-				int value = Integer.parseInt(valueMatcher.group(1));
-				String style = valueMatcher.group(2).trim().replaceAll("[\\[\\]]", "");
+				int value = Integer.parseInt(matcher.group(1));
+				String style = matcher.group(2).trim();
 				maxHits.put(style, value);
 			}
 			else
@@ -245,6 +141,7 @@ public class WikiService
 				}
 				catch (NumberFormatException ignored)
 				{
+					log.warn("Invalid max hit value: {}", hit);
 				}
 			}
 		}
