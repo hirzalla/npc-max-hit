@@ -34,7 +34,7 @@ public class NpcMaxHitPlugin extends Plugin
 {
 	private Actor player;
 	private long lastHitsplatTime = 0;
-	private final ExecutorService executor = Executors.newSingleThreadExecutor();
+	private ExecutorService executor;
 
 	@Inject
 	private Client client;
@@ -65,6 +65,7 @@ public class NpcMaxHitPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
+		executor = Executors.newSingleThreadExecutor();
 		overlayManager.add(overlay);
 
 		// testing
@@ -138,6 +139,7 @@ public class NpcMaxHitPlugin extends Plugin
 		lastHitsplatTime = System.currentTimeMillis();
 
 		// Run wiki request in background
+		if (executor == null || executor.isShutdown()) return;
 		executor.submit(() -> {
 			Optional<NpcMaxHitData> data = wikiService.getMaxHitData(npcName, npcId);
 			data.ifPresent(npcData -> {
