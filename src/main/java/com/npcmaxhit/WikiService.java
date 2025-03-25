@@ -252,7 +252,7 @@ public class WikiService
 			if (valueMatcher.find())
 			{
 				int value = Integer.parseInt(valueMatcher.group(1));
-				String style = valueMatcher.group(2).trim();
+				String style = valueMatcher.group(2).trim().replaceAll("[\\[\\]]", "");
 				maxHits.put(style, value);
 			}
 			else
@@ -260,7 +260,7 @@ public class WikiService
 				try
 				{
 					int value = Integer.parseInt(hit);
-					maxHits.put("Max hit", value);
+					maxHits.put("Max Hit", value);
 				}
 				catch (NumberFormatException ignored)
 				{

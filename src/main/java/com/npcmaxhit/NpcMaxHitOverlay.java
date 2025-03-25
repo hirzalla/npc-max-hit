@@ -4,6 +4,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import net.runelite.client.ui.overlay.Overlay;
+import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.PanelComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
@@ -21,6 +22,10 @@ public class NpcMaxHitOverlay extends Overlay
 	public NpcMaxHitOverlay(NpcMaxHitConfig config)
 	{
 		this.config = config;
+		setResizable(true);
+		setLayer(OverlayLayer.ABOVE_SCENE);
+		setPosition(OverlayPosition.ABOVE_CHATBOX_RIGHT);
+		panelComponent.setWrap(true);
 		panelComponent.setPreferredSize(new Dimension(150, 0));
 	}
 
@@ -50,7 +55,6 @@ public class NpcMaxHitOverlay extends Overlay
 		}
 
 		panelComponent.getChildren().clear();
-		setPosition(OverlayPosition.TOP_LEFT);
 		panelComponent.setBackgroundColor(config.overlayBackgroundColor());
 
 		// Create font with configured family, style and size
@@ -66,7 +70,7 @@ public class NpcMaxHitOverlay extends Overlay
 		// for testing
 		String npcVersion = npcNameAndVersion.length > 1 ? npcNameAndVersion[1] : "";
 		int npcId = currentNpc.getNpcId();
-		
+
 		panelComponent.getChildren().add(TitleComponent.builder()
 			.text(npcName)
 			.color(config.titleColor())

@@ -48,6 +48,9 @@ public class NpcMaxHitPlugin extends Plugin
 	@Inject
 	private OverlayManager overlayManager;
 
+	@Inject
+	private NpcMaxHitConfig config;
+
 	@Override
 	protected void startUp() throws Exception
 	{
@@ -55,10 +58,11 @@ public class NpcMaxHitPlugin extends Plugin
 
 		// Test cases with specific NPC IDs
 		// 3017 Giant spider
-		wikiService.getMaxHitData("Giant spider", 3017).ifPresent(overlay::updateNpcData);
-		wikiService.getMaxHitData("Goblin", 3029).ifPresent(overlay::updateNpcData);
-		wikiService.getMaxHitData("Zulrah", 2042).ifPresent(overlay::updateNpcData); // Green form
-		wikiService.getMaxHitData("Phantom Muspah", 12079).ifPresent(overlay::updateNpcData);
+//		wikiService.getMaxHitData("Giant spider", 3017).ifPresent(overlay::updateNpcData);
+//		wikiService.getMaxHitData("Goblin", 3029).ifPresent(overlay::updateNpcData);
+//		wikiService.getMaxHitData("Zulrah", 2042).ifPresent(overlay::updateNpcData); // Green form
+//		wikiService.getMaxHitData("Phantom Muspah", 12079).ifPresent(overlay::updateNpcData);
+		wikiService.getMaxHitData("Araxxor", 13668).ifPresent(overlay::updateNpcData);
 		wikiService.getMaxHitData("Duke Sucellus", 12191).ifPresent(overlay::updateNpcData);
 	}
 
@@ -92,23 +96,24 @@ public class NpcMaxHitPlugin extends Plugin
 		log.debug("Hitsplat applied: " + hitsplat.getHitsplatType() + " to " + actor.getName());
 		log.debug("Hitsplat isMine: " + hitsplat.isMine());
 
+		// Only interested in NPC hitsplats caused by the player
 		if (!(actor instanceof NPC) || !hitsplat.isMine())
 		{
 			return;
 		}
 
-		// if the overlay includes the same npc name and ID, return
-		if (overlay.getCurrentNpcName() != null && overlay.getCurrentNpcName().equals(actor.getName()) && ((NPC) actor).getId() == overlay.getCurrentNpcId())
+		NPC npc = (NPC) actor;
+		String npcName = npc.getName();
+		int npcId = npc.getId();
+
+		// Update last hitsplat time
+		lastHitsplatTime = System.currentTimeMillis();
+
+		// if the overlay includes the same npc/ID, no need to request data again
+		if (overlay.getCurrentNpcName() != null && overlay.getCurrentNpcName().equals(npcName) && npcId == overlay.getCurrentNpcId())
 		{
 			return;
 		}
-
-		NPC npc = (NPC) actor;
-		lastHitsplatTime = System.currentTimeMillis();
-
-		// Capture both name and ID before submitting to executor
-		final String npcName = actor.getName();
-		final int npcId = npc.getId();
 
 		// Run wiki request in background
 		executor.submit(() -> {
@@ -126,11 +131,12 @@ public class NpcMaxHitPlugin extends Plugin
 	public void onGameTick(GameTick tick)
 	{
 		long currentTime = System.currentTimeMillis();
-		if (currentTime - lastHitsplatTime >= 6000 && overlay.getCurrentNpcName() != null)
+		int timeoutMs = config.inactivityTimeout() * 1000;
+		if (currentTime - lastHitsplatTime >= timeoutMs && overlay.getCurrentNpcName() != null)
 		{
 			clientThread.invoke(() -> {
 				overlay.updateNpcData(null);
-				log.debug("Overlay cleared after 6 seconds of inactivity");
+				log.debug("Overlay cleared after {} seconds of inactivity", config.inactivityTimeout());
 			});
 		}
 	}

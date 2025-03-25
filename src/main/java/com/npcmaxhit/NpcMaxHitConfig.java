@@ -51,6 +51,18 @@ public interface NpcMaxHitConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "inactivityTimeout",
+		name = "Inactivity Timeout",
+		description = "Time in seconds before the overlay is hidden after the player stops attacking",
+		section = overlaySection,
+		position = 1
+	)
+	default int inactivityTimeout()
+	{
+		return 6;
+	}
+
+	@ConfigItem(
 		keyName = "fontFamily",
 		name = "Font",
 		description = "Font to use in the overlay",
