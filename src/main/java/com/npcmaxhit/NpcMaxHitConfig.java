@@ -26,6 +26,13 @@ public interface NpcMaxHitConfig extends Config
 	)
 	String overlaySection = "overlay";
 
+	@ConfigSection(
+		name = "Infobox",
+		description = "Infobox appearance settings",
+		position = 2
+	)
+	String infoboxSection = "infobox";
+
 	@ConfigItem(
 		keyName = "showOverlay",
 		name = "Show Overlay",
@@ -39,6 +46,30 @@ public interface NpcMaxHitConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "showInfobox",
+		name = "Show Infobox",
+		description = "Show max hit information in an infobox",
+		section = generalSection,
+		position = 1
+	)
+	default boolean showInfobox()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "timeout",
+		name = "Display Timeout",
+		description = "Time in seconds before the displays are hidden after the player stops attacking",
+		section = generalSection,
+		position = 2
+	)
+	default int timeout()
+	{
+		return 6;
+	}
+
+	@ConfigItem(
 		keyName = "compact",
 		name = "Compact Mode",
 		description = "Only show the highest max hit value when multiple attack styles are present",
@@ -49,19 +80,7 @@ public interface NpcMaxHitConfig extends Config
 	{
 		return false;
 	}
-
-	@ConfigItem(
-		keyName = "inactivityTimeout",
-		name = "Inactivity Timeout",
-		description = "Time in seconds before the overlay is hidden after the player stops attacking",
-		section = overlaySection,
-		position = 1
-	)
-	default int inactivityTimeout()
-	{
-		return 6;
-	}
-
+	
 	@ConfigItem(
 		keyName = "fontFamily",
 		name = "Font",
@@ -121,37 +140,37 @@ public interface NpcMaxHitConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "fontSize",
+		keyName = "overlayFontSize",
 		name = "Font Size",
 		description = "Size of the text in the overlay",
 		section = overlaySection,
 		position = 95
 	)
-	default int fontSize()
+	default int overlayFontSize()
 	{
 		return 16;
 	}
 
 	@ConfigItem(
-		keyName = "titleColor",
-		name = "Title Color",
-		description = "Color of the NPC name in the overlay",
+		keyName = "overlayTextColor",
+		name = "Text Color",
+		description = "Color of the text in the overlay (NPC name, attack style/type)",
 		section = overlaySection,
 		position = 96
 	)
-	default Color titleColor()
+	default Color overlayTextColor()
 	{
 		return Color.WHITE;
 	}
 
 	@ConfigItem(
-		keyName = "textColor",
-		name = "Text Color",
-		description = "Color of the max hit values",
+		keyName = "overlayValueColor",
+		name = "Max Hit Color",
+		description = "Color of the max hit values in the overlay",
 		section = overlaySection,
 		position = 97
 	)
-	default Color textColor()
+	default Color overlayValueColor()
 	{
 		return Color.YELLOW;
 	}
@@ -167,6 +186,42 @@ public interface NpcMaxHitConfig extends Config
 	default Color overlayBackgroundColor()
 	{
 		return new Color(70, 61, 50, 156);
+	}
+
+	@ConfigItem(
+		keyName = "infoboxTextColor",
+		name = "Max Hit Color",
+		description = "Color of the highest max hit value in the infobox",
+		section = infoboxSection,
+		position = 97
+	)
+	default Color infoboxTextColor()
+	{
+		return Color.WHITE;
+	}
+
+	@ConfigItem(
+		keyName = "infoboxTooltipTextColor",
+		name = "Tooltip Text Color",
+		description = "Color of the text in the infobox tooltip (NPC name, attack style/type)",
+		section = infoboxSection,
+		position = 98
+	)
+	default Color infoboxTooltipTextColor()
+	{
+		return Color.WHITE;
+	}
+
+	@ConfigItem(
+		keyName = "infoboxTooltipValueColor",
+		name = "Tooltip Max Hits Color",
+		description = "Color of the max hit values in the infobox tooltip",
+		section = infoboxSection,
+		position = 99
+	)
+	default Color infoboxTooltipValueColor()
+	{
+		return Color.YELLOW;
 	}
 
 }

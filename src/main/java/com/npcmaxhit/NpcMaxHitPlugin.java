@@ -2,23 +2,27 @@ package com.npcmaxhit;
 
 import com.google.inject.Inject;
 import com.google.inject.Provides;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Hitsplat;
 import net.runelite.api.NPC;
-import net.runelite.api.events.*;
+import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.GameTick;
+import net.runelite.api.events.HitsplatApplied;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.game.SpriteManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
-import net.runelite.client.callback.ClientThread;
-import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 
 @Slf4j
 @PluginDescriptor(
@@ -31,7 +35,6 @@ public class NpcMaxHitPlugin extends Plugin
 	private Actor player;
 	private long lastHitsplatTime = 0;
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
-
 
 	@Inject
 	private Client client;
@@ -50,6 +53,14 @@ public class NpcMaxHitPlugin extends Plugin
 
 	@Inject
 	private NpcMaxHitConfig config;
+
+	@Inject
+	private InfoBoxManager infoBoxManager;
+
+	@Inject
+	private SpriteManager spriteManager;
+
+	private NpcMaxHitInfoBox infoBox;
 
 	@Override
 	protected void startUp() throws Exception
@@ -71,6 +82,7 @@ public class NpcMaxHitPlugin extends Plugin
 	{
 		overlayManager.remove(overlay);
 		overlay.updateNpcData(null);
+		removeInfoBox();
 
 		try
 		{
@@ -84,6 +96,26 @@ public class NpcMaxHitPlugin extends Plugin
 		{
 			Thread.currentThread().interrupt();
 			log.warn("Executor shutdown interrupted", e);
+		}
+	}
+
+	private void removeInfoBox()
+	{
+		if (infoBox != null)
+		{
+			infoBoxManager.removeInfoBox(infoBox);
+			infoBox = null;
+		}
+	}
+
+	private void updateInfoBox(NpcMaxHitData data)
+	{
+		removeInfoBox();
+		if (data != null && config.showInfobox())
+		{
+			final int RED_HITSPLAT = 1359;
+			infoBox = new NpcMaxHitInfoBox(data, spriteManager.getSprite(RED_HITSPLAT, 0), this, config);
+			infoBoxManager.addInfoBox(infoBox);
 		}
 	}
 
@@ -109,19 +141,16 @@ public class NpcMaxHitPlugin extends Plugin
 		// Update last hitsplat time
 		lastHitsplatTime = System.currentTimeMillis();
 
-		// if the overlay includes the same npc/ID, no need to request data again
-		if (overlay.getCurrentNpcName() != null && overlay.getCurrentNpcName().equals(npcName) && npcId == overlay.getCurrentNpcId())
-		{
-			return;
-		}
-
 		// Run wiki request in background
 		executor.submit(() -> {
 			log.debug("Getting max hit data for {} (ID: {})", npcName, npcId);
 			Optional<NpcMaxHitData> data = wikiService.getMaxHitData(npcName, npcId);
 			data.ifPresent(npcData -> {
 					log.debug("Got max hit data for {} (ID: {}): {}", npcName, npcId, npcData.getHighestMaxHit());
-					clientThread.invoke(() -> overlay.updateNpcData(npcData));
+					clientThread.invoke(() -> {
+						overlay.updateNpcData(npcData);
+						updateInfoBox(npcData);
+					});
 				}
 			);
 		});
@@ -131,13 +160,17 @@ public class NpcMaxHitPlugin extends Plugin
 	public void onGameTick(GameTick tick)
 	{
 		long currentTime = System.currentTimeMillis();
-		int timeoutMs = config.inactivityTimeout() * 1000;
-		if (currentTime - lastHitsplatTime >= timeoutMs && overlay.getCurrentNpcName() != null)
+		int timeoutMs = config.timeout() * 1000;
+		if (currentTime - lastHitsplatTime >= timeoutMs)
 		{
-			clientThread.invoke(() -> {
-				overlay.updateNpcData(null);
-				log.debug("Overlay cleared after {} seconds of inactivity", config.inactivityTimeout());
-			});
+			if (overlay.getCurrentNpcName() != null)
+			{
+				clientThread.invoke(() -> {
+					overlay.updateNpcData(null);
+					removeInfoBox();
+					log.debug("Displays cleared after {} seconds of inactivity", config.timeout());
+				});
+			}
 		}
 	}
 

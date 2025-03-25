@@ -61,7 +61,7 @@ public class NpcMaxHitOverlay extends Overlay
 		graphics.setFont(new Font(
 			config.fontFamily().getFamily(),
 			config.fontStyle().getStyle(),
-			config.fontSize()
+			config.overlayFontSize()
 		));
 
 		// Add title with NPC ID
@@ -73,7 +73,7 @@ public class NpcMaxHitOverlay extends Overlay
 
 		panelComponent.getChildren().add(TitleComponent.builder()
 			.text(npcName)
-			.color(config.titleColor())
+			.color(config.overlayTextColor())
 			.build());
 
 		// Add max hits based on compact mode
@@ -82,8 +82,8 @@ public class NpcMaxHitOverlay extends Overlay
 			panelComponent.getChildren().add(LineComponent.builder()
 				.left("Max Hit")
 				.right(Integer.toString(currentNpc.getHighestMaxHit()))
-				.leftColor(config.textColor())
-				.rightColor(config.textColor())
+				.leftColor(config.overlayTextColor())
+				.rightColor(config.overlayValueColor())
 				.build());
 		}
 		else
@@ -93,8 +93,8 @@ public class NpcMaxHitOverlay extends Overlay
 				panelComponent.getChildren().add(LineComponent.builder()
 					.left(style)
 					.right(Integer.toString(hit))
-					.leftColor(config.textColor())
-					.rightColor(config.textColor())
+					.leftColor(config.overlayTextColor())
+					.rightColor(config.overlayValueColor())
 					.build())
 			);
 		}
