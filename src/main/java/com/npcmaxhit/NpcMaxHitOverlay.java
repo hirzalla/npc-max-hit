@@ -23,7 +23,6 @@ public class NpcMaxHitOverlay extends Overlay
 	{
 		this.config = config;
 		setResizable(true);
-		setLayer(OverlayLayer.ABOVE_SCENE);
 		setPosition(OverlayPosition.ABOVE_CHATBOX_RIGHT);
 		panelComponent.setWrap(true);
 		panelComponent.setPreferredSize(new Dimension(150, 0));

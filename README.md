@@ -1,32 +1,43 @@
-# Npc Max Hit Plugin
+# NPC Max Hit
 
-A RuneLite plugin that displays the maximum hit values for non-player opponents by fetching data from the OSRS Wiki.
+A RuneLite plugin that displays the max hit values for NPCs you are currently fighting, sourced from the OSRS Wiki.
+
+## Screenshots
+
+| Feature                  | Screenshot 1                                            | Screenshot 2                                            |
+|--------------------------|---------------------------------------------------------|---------------------------------------------------------|
+| Multiple Variants/Phases | ![Multiple Forms Example 1](screenshots/scurrius_1.png) | ![Multiple Forms Example 2](screenshots/scurrius_2.png) |
+| Overlay                  | ![Overlay Example 1](screenshots/overlay_1.png)         | ![Overlay Example 2](screenshots/overlay_2.png)         |
+| Infobox                  | ![Infobox Example 1](screenshots/infobox_1.png)         | ![Infobox Example 2](screenshots/infobox_2.png)         |
 
 ## Features
 
 - Shows max hit values for your current opponent (NPCs, bosses, etc.)
 - Fetches data directly from the OSRS Wiki
-- Configurable overlay display options
-- Supports multiple monster variants/phases
+- Supports multiple monster variants/phases (e.g. Zulrah, Phantom Muspah)
+- Display options:
+    - Detailed overlay with all max hit information (e.g. melee, ranged, magic, specials)
+    - Compact infobox showing highest max hit with a detailed tooltip on hover
+- Auto-hides after combat inactivity
 
-## Configuration
+## Notes
 
-### General Settings
+The max hit values displayed:
 
-- **Show Overlay**: Toggle the max hit display on/off
+- Don't account for protection prayers or other damage reduction effects
+- Are parsed from OSRS Wiki and may not always be accurate
+- May be outdated if the Wiki hasn't been updated after game updates
 
-### Overlay Settings
+Please verify critical information directly on the Wiki.
 
-- **Compact Mode**: Show only the highest max hit instead of all variants
-- **Font Settings**: Customize font family, style, and size
-- **Colors**: Customize title, text, and background colors
+## Configurations
 
-## Example
-
-When fighting a monster like Zulrah, the overlay will show different max hits for each combat style and phase.
-
-For a monster with multiple forms like Phantom Muspah, you'll see the max hits for each transformation.
+- Toggle and position both the overlay and infobox displays
+- Customize fonts, colors, and transparency
+- Adjust combat timeout duration
+- Switch between detailed and compact display modes
 
 ## Attribution
 
 Data is sourced from the [Old School RuneScape Wiki](https://oldschool.runescape.wiki/).
+

@@ -26,9 +26,9 @@ import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 
 @Slf4j
 @PluginDescriptor(
-	name = "Npc Max Hit",
-	description = "Displays the max hit for non-player opponents",
-	tags = {"maxhit", "monster", "boss", "npc", "opponent", "hit", "damage", "overlay", "combat", "pvm", "pve", "max hit"}
+	name = "NPC Max Hit",
+	description = "Displays the max hits of the NPC you are fighting",
+	tags = {"maxhit", "monster", "boss", "npc", "opponent", "hit", "damage", "overlay", "combat", "pvm", "pve", "max hit", "infobox"}
 )
 public class NpcMaxHitPlugin extends Plugin
 {
