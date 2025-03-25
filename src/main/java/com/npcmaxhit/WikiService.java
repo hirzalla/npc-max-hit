@@ -33,18 +33,7 @@ public class WikiService
 	private OkHttpClient httpClient;
 
 	@Inject
-	private void init()
-	{
-		httpClient = new OkHttpClient.Builder()
-			.connectTimeout(10, TimeUnit.SECONDS)
-			.readTimeout(10, TimeUnit.SECONDS)
-			.writeTimeout(10, TimeUnit.SECONDS)
-			.addInterceptor(chain -> chain.proceed(
-				chain.request().newBuilder()
-					.header("User-Agent", "RuneLite npc-max-hit plugin")
-					.build()))
-			.build();
-	}
+	private Gson gson;
 
 	public Optional<NpcMaxHitData> getMaxHitData(String npcName, int npcId)
 	{
@@ -68,6 +57,7 @@ public class WikiService
 
 			Request request = new Request.Builder()
 				.url(url)
+				.header("User-Agent", "RuneLite npc-max-hit plugin")
 				.build();
 
 			try (Response response = httpClient.newCall(request).execute())
@@ -78,7 +68,7 @@ public class WikiService
 				}
 
 				String responseBody = response.body().string();
-				JsonObject jsonResponse = new Gson().fromJson(responseBody, JsonObject.class);
+				JsonObject jsonResponse = gson.fromJson(responseBody, JsonObject.class);
 
 				if (!jsonResponse.has("parse") || !jsonResponse.getAsJsonObject("parse").has("wikitext"))
 				{
@@ -260,4 +250,3 @@ public class WikiService
 		}
 	}
 }
-
