@@ -80,22 +80,31 @@ public class NpcMaxHitPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
+		shutdownExecutor();
 		overlayManager.remove(overlay);
 		overlay.updateNpcData(null);
 		removeInfoBox();
 
-		try
+	}
+
+	private void shutdownExecutor()
+	{
+		if (executor != null)
 		{
-			executor.shutdownNow();
-			if (!executor.awaitTermination(1, TimeUnit.SECONDS))
+			executor.shutdown();
+			try
 			{
-				log.warn("Executor didn't terminate in the specified time.");
+				if (!executor.awaitTermination(1, TimeUnit.SECONDS))
+				{
+					executor.shutdownNow();
+				}
 			}
-		}
-		catch (InterruptedException e)
-		{
-			Thread.currentThread().interrupt();
-			log.warn("Executor shutdown interrupted", e);
+			catch (InterruptedException e)
+			{
+				executor.shutdownNow();
+				Thread.currentThread().interrupt();
+			}
+			executor = null;
 		}
 	}
 
@@ -111,10 +120,9 @@ public class NpcMaxHitPlugin extends Plugin
 	private void updateInfoBox(NpcMaxHitData data)
 	{
 		removeInfoBox();
-		if (data != null && config.showInfobox())
+		if (data != null)
 		{
-			final int RED_HITSPLAT = 1359;
-			infoBox = new NpcMaxHitInfoBox(data, spriteManager.getSprite(RED_HITSPLAT, 0), this, config);
+			infoBox = new NpcMaxHitInfoBox(data, config, spriteManager, this);
 			infoBoxManager.addInfoBox(infoBox);
 		}
 	}
@@ -138,8 +146,12 @@ public class NpcMaxHitPlugin extends Plugin
 		// Update last hitsplat time
 		lastHitsplatTime = System.currentTimeMillis();
 
-		// Run wiki request in background
-		if (executor == null || executor.isShutdown()) return;
+		// dont attempt to re-fetch data if the same npc is being attacked
+		if (overlay.getCurrentNpcName() != null && overlay.getCurrentNpcName().equals(npcName) && overlay.getCurrentNpcId() == npcId)
+		{
+			return;
+		}
+
 		executor.submit(() -> {
 			Optional<NpcMaxHitData> data = wikiService.getMaxHitData(npcName, npcId);
 			data.ifPresent(npcData -> {
@@ -155,17 +167,20 @@ public class NpcMaxHitPlugin extends Plugin
 	@Subscribe
 	public void onGameTick(GameTick tick)
 	{
+		if (overlay.getCurrentNpcName() == null || overlay.getCurrentNpcId() == -1)
+		{
+			return;
+		}
+
 		long currentTime = System.currentTimeMillis();
 		int timeoutMs = config.timeout() * 1000;
+
 		if (currentTime - lastHitsplatTime >= timeoutMs)
 		{
-			if (overlay.getCurrentNpcName() != null)
-			{
-				clientThread.invoke(() -> {
-					overlay.updateNpcData(null);
-					removeInfoBox();
-				});
-			}
+			clientThread.invoke(() -> {
+				overlay.updateNpcData(null);
+				removeInfoBox();
+			});
 		}
 	}
 

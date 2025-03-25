@@ -4,18 +4,20 @@ import java.util.Map;
 import net.runelite.client.ui.overlay.infobox.InfoBox;
 import net.runelite.client.ui.overlay.infobox.InfoBoxPriority;
 import net.runelite.client.util.ColorUtil;
+import net.runelite.client.game.SpriteManager;
+import net.runelite.client.plugins.Plugin;
 
 import java.awt.*;
-import java.awt.image.BufferedImage;
 
 public class NpcMaxHitInfoBox extends InfoBox
 {
+	private static final int RED_HITSPLAT = 1359;
 	private final NpcMaxHitData data;
 	private final NpcMaxHitConfig config;
 
-	public NpcMaxHitInfoBox(NpcMaxHitData data, BufferedImage image, NpcMaxHitPlugin plugin, NpcMaxHitConfig config)
+	public NpcMaxHitInfoBox(NpcMaxHitData data, NpcMaxHitConfig config, SpriteManager spriteManager, Plugin plugin)
 	{
-		super(image, plugin);
+		super(spriteManager.getSprite(RED_HITSPLAT, 0), plugin);
 		this.data = data;
 		this.config = config;
 		setPriority(InfoBoxPriority.HIGH);
@@ -56,3 +58,4 @@ public class NpcMaxHitInfoBox extends InfoBox
 		return config.showInfobox();
 	}
 }
+
