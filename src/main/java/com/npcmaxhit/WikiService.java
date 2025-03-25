@@ -74,7 +74,6 @@ public class WikiService
 			{
 				if (!response.isSuccessful() || response.body() == null)
 				{
-					log.debug("Failed to fetch wiki data for {} (ID: {}): {}", pageName, npcId, response.code());
 					return Optional.empty();
 				}
 
@@ -83,7 +82,6 @@ public class WikiService
 
 				if (!jsonResponse.has("parse") || !jsonResponse.getAsJsonObject("parse").has("wikitext"))
 				{
-					log.debug("Invalid wiki response for {} (ID: {})", pageName, npcId);
 					return Optional.empty();
 				}
 
@@ -95,7 +93,6 @@ public class WikiService
 				if (!maxHits.isEmpty())
 				{
 					NpcMaxHitData data = new NpcMaxHitData(pageName, npcId, maxHits);
-					log.debug("Fetched highest max hit data for {} (ID: {}): {}", pageName, npcId, data.getHighestMaxHit());
 					maxHitCache.put(npcId, data);
 					return Optional.of(data);
 				}
@@ -103,7 +100,7 @@ public class WikiService
 		}
 		catch (Exception e)
 		{
-			log.debug("Error fetching wiki data for {} (ID: {}): {}", npcName, npcId, e.getMessage());
+			log.warn("Error fetching wiki data for {} (ID: {}): {}", npcName, npcId, e.getMessage());
 		}
 		return Optional.empty();
 	}
@@ -145,7 +142,7 @@ public class WikiService
 		}
 		catch (Exception e)
 		{
-			log.debug("Error getting canonical name for {} (ID: {}): {}", npcName, npcId, e.getMessage());
+			log.warn("Error getting canonical name for {} (ID: {}): {}", npcName, npcId, e.getMessage());
 		}
 		return null;
 	}
@@ -162,14 +159,12 @@ public class WikiService
 		{
 			versionName = pageName.substring(pageName.indexOf("#") + 1);
 			versionNumber = findVersionNumber(wikitext, versionName);
-			log.debug("Found version name: {} with number: {}", versionName, versionNumber);
 		}
 
 		// Try to find version-specific max hit first
 		if (versionNumber > 0)
 		{
 			String versionSpecificMaxHits = findMaxHitForVersion(wikitext, versionNumber);
-			log.debug("Found version-specific max hits: {}", versionSpecificMaxHits);
 			if (versionSpecificMaxHits != null)
 			{
 				parseMaxHitValues(versionSpecificMaxHits, maxHits);
@@ -179,7 +174,6 @@ public class WikiService
 
 		// Fall back to default max hit if no version-specific one found
 		String defaultMaxHits = findMaxHitForVersion(wikitext, 0);
-		log.debug("Found default max hits: {}", defaultMaxHits);
 		if (defaultMaxHits != null)
 		{
 			parseMaxHitValues(defaultMaxHits, maxHits);
@@ -201,9 +195,6 @@ public class WikiService
 
 			// Normalize version from wiki by cleaning
 			String normalizedVersion = version.replaceAll("[()]", "").trim();
-
-			log.debug("Comparing versions - Target: '{}' vs Wiki: '{}' (number: {})",
-				normalizedTarget, normalizedVersion, number);
 
 			if (normalizedVersion.equalsIgnoreCase(normalizedTarget))
 			{

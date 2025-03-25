@@ -67,14 +67,13 @@ public class NpcMaxHitPlugin extends Plugin
 	{
 		overlayManager.add(overlay);
 
-		// Test cases with specific NPC IDs
-		// 3017 Giant spider
+		// testing
 //		wikiService.getMaxHitData("Giant spider", 3017).ifPresent(overlay::updateNpcData);
 //		wikiService.getMaxHitData("Goblin", 3029).ifPresent(overlay::updateNpcData);
 //		wikiService.getMaxHitData("Zulrah", 2042).ifPresent(overlay::updateNpcData); // Green form
 //		wikiService.getMaxHitData("Phantom Muspah", 12079).ifPresent(overlay::updateNpcData);
-		wikiService.getMaxHitData("Araxxor", 13668).ifPresent(overlay::updateNpcData);
-		wikiService.getMaxHitData("Duke Sucellus", 12191).ifPresent(overlay::updateNpcData);
+//		wikiService.getMaxHitData("Araxxor", 13668).ifPresent(overlay::updateNpcData);
+//		wikiService.getMaxHitData("Duke Sucellus", 12191).ifPresent(overlay::updateNpcData);
 	}
 
 	@Override
@@ -125,9 +124,6 @@ public class NpcMaxHitPlugin extends Plugin
 		Actor actor = event.getActor();
 		Hitsplat hitsplat = event.getHitsplat();
 
-		log.debug("Hitsplat applied: " + hitsplat.getHitsplatType() + " to " + actor.getName());
-		log.debug("Hitsplat isMine: " + hitsplat.isMine());
-
 		// Only interested in NPC hitsplats caused by the player
 		if (!(actor instanceof NPC) || !hitsplat.isMine())
 		{
@@ -143,10 +139,8 @@ public class NpcMaxHitPlugin extends Plugin
 
 		// Run wiki request in background
 		executor.submit(() -> {
-			log.debug("Getting max hit data for {} (ID: {})", npcName, npcId);
 			Optional<NpcMaxHitData> data = wikiService.getMaxHitData(npcName, npcId);
 			data.ifPresent(npcData -> {
-					log.debug("Got max hit data for {} (ID: {}): {}", npcName, npcId, npcData.getHighestMaxHit());
 					clientThread.invoke(() -> {
 						overlay.updateNpcData(npcData);
 						updateInfoBox(npcData);
@@ -168,7 +162,6 @@ public class NpcMaxHitPlugin extends Plugin
 				clientThread.invoke(() -> {
 					overlay.updateNpcData(null);
 					removeInfoBox();
-					log.debug("Displays cleared after {} seconds of inactivity", config.timeout());
 				});
 			}
 		}
