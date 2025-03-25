@@ -49,4 +49,10 @@ public class NpcMaxHitInfoBox extends InfoBox
 
 		return tooltip.toString();
 	}
+
+	@Override
+	public boolean render()
+	{
+		return config.showInfobox();
+	}
 }
