@@ -54,7 +54,7 @@ public interface NpcMaxHitConfig extends Config
 	)
 	default boolean showInfobox()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
@@ -80,13 +80,13 @@ public interface NpcMaxHitConfig extends Config
 	{
 		return false;
 	}
-	
+
 	@ConfigItem(
 		keyName = "fontFamily",
 		name = "Font",
 		description = "Font to use in the overlay",
 		section = overlaySection,
-		position = 93
+		position = 92
 	)
 	default FontFamily fontFamily()
 	{
@@ -115,7 +115,7 @@ public interface NpcMaxHitConfig extends Config
 		name = "Font Style",
 		description = "Style of the font in the overlay",
 		section = overlaySection,
-		position = 94
+		position = 93
 	)
 	default FontStyle fontStyle()
 	{
@@ -144,17 +144,30 @@ public interface NpcMaxHitConfig extends Config
 		name = "Font Size",
 		description = "Size of the text in the overlay",
 		section = overlaySection,
-		position = 95
+		position = 94
 	)
 	default int overlayFontSize()
 	{
 		return 16;
 	}
 
+	// overlayTitleColor
+	@ConfigItem(
+		keyName = "overlayTitleColor",
+		name = "Title Color",
+		description = "Color of the title in the overlay (NPC name)",
+		section = overlaySection,
+		position = 95
+	)
+	default Color overlayTitleColor()
+	{
+		return Color.YELLOW;
+	}
+
 	@ConfigItem(
 		keyName = "overlayTextColor",
 		name = "Text Color",
-		description = "Color of the text in the overlay (NPC name, attack style/type)",
+		description = "Color of the text in the overlay",
 		section = overlaySection,
 		position = 96
 	)
@@ -193,11 +206,24 @@ public interface NpcMaxHitConfig extends Config
 		name = "Max Hit Color",
 		description = "Color of the highest max hit value in the infobox",
 		section = infoboxSection,
-		position = 97
+		position = 96
 	)
 	default Color infoboxTextColor()
 	{
 		return Color.WHITE;
+	}
+
+	// infoboxTooltipTitleColor
+	@ConfigItem(
+		keyName = "infoboxTooltipTitleColor",
+		name = "Tooltip Title Color",
+		description = "Color of the title in the infobox tooltip (NPC name)",
+		section = infoboxSection,
+		position = 97
+	)
+	default Color infoboxTooltipTitleColor()
+	{
+		return Color.YELLOW;
 	}
 
 	@ConfigItem(

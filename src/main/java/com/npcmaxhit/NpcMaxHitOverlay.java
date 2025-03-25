@@ -60,7 +60,7 @@ public class NpcMaxHitOverlay extends Overlay
 			// Add form/version title
 			panelComponent.getChildren().add(TitleComponent.builder()
 				.text(data.getDisplayName())
-				.color(config.overlayTextColor())
+				.color(config.overlayTitleColor())
 				.build());
 
 			// Add max hits based on compact mode

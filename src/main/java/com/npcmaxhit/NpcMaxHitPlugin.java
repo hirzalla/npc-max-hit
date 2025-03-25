@@ -181,26 +181,26 @@ public class NpcMaxHitPlugin extends Plugin
 			player = client.getLocalPlayer();
 
 			// testing
-			/*executor.submit(() -> {
-				List<Integer> testNpcs = List.of(
-					2042,
-					12191,
-					12079,
-					13668
-				);
-
-				for (int npcId : testNpcs)
-				{
-					List<NpcMaxHitData> dataList = wikiService.getMaxHitData(npcId);
-					if (!dataList.isEmpty())
-					{
-						clientThread.invoke(() -> {
-							overlay.updateNpcDataList(dataList);
-							updateInfoBox(dataList);
-						});
-					}
-				}
-			});*/
+//			executor.submit(() -> {
+//				List<Integer> testNpcs = List.of(
+//					13668,
+//					2042,
+//					12191,
+//					12079
+//				);
+//
+//				for (int npcId : testNpcs)
+//				{
+//					List<NpcMaxHitData> dataList = wikiService.getMaxHitData(npcId);
+//					if (!dataList.isEmpty())
+//					{
+//						clientThread.invoke(() -> {
+//							overlay.updateNpcDataList(dataList);
+//							updateInfoBox(dataList);
+//						});
+//					}
+//				}
+//			});
 
 		}
 	}
