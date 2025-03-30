@@ -1,4 +1,6 @@
 # NPC Max Hit
+[![Active Installs](http://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/installs/plugin/npc-max-hit)](https://runelite.net/plugin-hub/show/npc-max-hit)
+[![Plugin Rank](http://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/rank/plugin/npc-max-hit)](https://runelite.net/plugin-hub/show/npc-max-hit)
 
 A RuneLite plugin that displays the max hit values for NPCs you are currently fighting, sourced from the OSRS Wiki.
 
