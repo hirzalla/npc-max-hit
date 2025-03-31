@@ -8,11 +8,11 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
-import net.runelite.api.GameState;
 import net.runelite.api.Hitsplat;
 import net.runelite.api.NPC;
-import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.CommandExecuted;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.client.callback.ClientThread;
@@ -144,13 +144,20 @@ public class NpcMaxHitPlugin extends Plugin
 			return;
 		}
 
+		fetchAndDisplayMaxHitData(npcId);
+	}
+
+	public void fetchAndDisplayMaxHitData(int npcId)
+	{
 		executor.submit(() -> {
 			List<NpcMaxHitData> dataList = wikiService.getMaxHitData(npcId);
+
 			if (!dataList.isEmpty())
 			{
 				clientThread.invoke(() -> {
 					overlay.updateNpcDataList(dataList);
 					updateInfoBox(dataList);
+//					client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Max hit data for NPC ID: " + npcId + " displayed.", null);
 				});
 			}
 		});
@@ -173,37 +180,20 @@ public class NpcMaxHitPlugin extends Plugin
 		}
 	}
 
-	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
-	{
-		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
-		{
-			player = client.getLocalPlayer();
-
-			// testing
-//			executor.submit(() -> {
-//				List<Integer> testNpcs = List.of(
-//					13668,
-//					2042,
-//					12191,
-//					12079
-//				);
+//	@Subscribe
+//	public void onCommandExecuted(CommandExecuted event)
+//	{
+//		String command = event.getCommand().toLowerCase();
+//		if (!command.equals("maxhit"))
+//		{
+//			return;
+//		}
 //
-//				for (int npcId : testNpcs)
-//				{
-//					List<NpcMaxHitData> dataList = wikiService.getMaxHitData(npcId);
-//					if (!dataList.isEmpty())
-//					{
-//						clientThread.invoke(() -> {
-//							overlay.updateNpcDataList(dataList);
-//							updateInfoBox(dataList);
-//						});
-//					}
-//				}
-//			});
-
-		}
-	}
+//		String[] arg = event.getArguments();
+//		int npcId = Integer.parseInt(arg[0]);
+//
+//		fetchAndDisplayMaxHitData(npcId);
+//	}
 
 	@Provides
 	NpcMaxHitConfig provideConfig(ConfigManager configManager)

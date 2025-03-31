@@ -55,7 +55,7 @@ public class NpcMaxHitInfoBox extends InfoBox
 			for (Map.Entry<String, Integer> entry : data.getMaxHits().entrySet())
 			{
 				tooltip.append("</br>")
-					.append(entry.getKey())
+					.append(ColorUtil.wrapWithColorTag(entry.getKey(), config.infoboxTooltipTextColor()))
 					.append(": ")
 					.append(ColorUtil.wrapWithColorTag(String.valueOf(entry.getValue()), config.infoboxTooltipValueColor()));
 			}

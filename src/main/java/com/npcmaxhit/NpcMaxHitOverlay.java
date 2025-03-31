@@ -5,18 +5,18 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.List;
+import javax.inject.Inject;
 import lombok.Getter;
-import net.runelite.client.ui.overlay.Overlay;
+import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
-import net.runelite.client.ui.overlay.components.PanelComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
 import net.runelite.client.ui.overlay.components.LineComponent;
 
-import javax.inject.Inject;
-
-public class NpcMaxHitOverlay extends Overlay
+public class NpcMaxHitOverlay extends OverlayPanel
 {
-	private final PanelComponent panelComponent = new PanelComponent();
+	private static final int MAX_ENTRIES = 5;
+	private static final int PANEL_WIDTH_OFFSET = 10;
+
 	private final NpcMaxHitConfig config;
 
 	@Getter
@@ -26,10 +26,8 @@ public class NpcMaxHitOverlay extends Overlay
 	public NpcMaxHitOverlay(NpcMaxHitConfig config)
 	{
 		this.config = config;
-		setResizable(true);
 		setPosition(OverlayPosition.ABOVE_CHATBOX_RIGHT);
-		panelComponent.setWrap(true);
-		panelComponent.setPreferredSize(new Dimension(150, 0));
+		setResizable(true);
 	}
 
 	public void updateNpcDataList(List<NpcMaxHitData> dataList)
@@ -45,8 +43,8 @@ public class NpcMaxHitOverlay extends Overlay
 			return null;
 		}
 
-		panelComponent.getChildren().clear();
 		panelComponent.setBackgroundColor(config.overlayBackgroundColor());
+		panelComponent.setPreferredSize(new Dimension(config.overlayFontSize() * PANEL_WIDTH_OFFSET, 0));
 
 		// Create font with configured family, style and size
 		graphics.setFont(new Font(
@@ -55,15 +53,17 @@ public class NpcMaxHitOverlay extends Overlay
 			config.overlayFontSize()
 		));
 
-		for (NpcMaxHitData data : currentNpcList)
+		// Only show up to MAX_ENTRIES NPCs
+		List<NpcMaxHitData> displayList = currentNpcList.size() > MAX_ENTRIES ?
+			currentNpcList.subList(0, MAX_ENTRIES) : currentNpcList;
+
+		for (NpcMaxHitData data : displayList)
 		{
-			// Add form/version title
 			panelComponent.getChildren().add(TitleComponent.builder()
 				.text(data.getDisplayName())
 				.color(config.overlayTitleColor())
 				.build());
 
-			// Add max hits based on compact mode
 			if (config.compact())
 			{
 				panelComponent.getChildren().add(LineComponent.builder()
@@ -86,6 +86,6 @@ public class NpcMaxHitOverlay extends Overlay
 			}
 		}
 
-		return panelComponent.render(graphics);
+		return super.render(graphics);
 	}
 }

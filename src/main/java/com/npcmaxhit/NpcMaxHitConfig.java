@@ -151,7 +151,6 @@ public interface NpcMaxHitConfig extends Config
 		return 16;
 	}
 
-	// overlayTitleColor
 	@ConfigItem(
 		keyName = "overlayTitleColor",
 		name = "Title Color",
@@ -213,7 +212,6 @@ public interface NpcMaxHitConfig extends Config
 		return Color.WHITE;
 	}
 
-	// infoboxTooltipTitleColor
 	@ConfigItem(
 		keyName = "infoboxTooltipTitleColor",
 		name = "Tooltip Title Color",
