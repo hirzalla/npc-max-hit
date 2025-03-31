@@ -10,9 +10,11 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.Hitsplat;
 import net.runelite.api.NPC;
 import net.runelite.api.events.CommandExecuted;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.client.callback.ClientThread;
@@ -117,6 +119,15 @@ public class NpcMaxHitPlugin extends Plugin
 		{
 			infoBox = new NpcMaxHitInfoBox(dataList, config, spriteManager, this);
 			infoBoxManager.addInfoBox(infoBox);
+		}
+	}
+	
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged gameStateChanged)
+	{
+		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
+		{
+			player = client.getLocalPlayer();
 		}
 	}
 
