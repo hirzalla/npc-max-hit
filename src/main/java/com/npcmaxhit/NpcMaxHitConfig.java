@@ -22,14 +22,16 @@ public interface NpcMaxHitConfig extends Config
 	@ConfigSection(
 		name = "Overlay",
 		description = "Overlay appearance settings",
-		position = 1
+		position = 1,
+		closedByDefault = true
 	)
 	String overlaySection = "overlay";
 
 	@ConfigSection(
 		name = "Infobox",
 		description = "Infobox appearance settings",
-		position = 2
+		position = 2,
+		closedByDefault = true
 	)
 	String infoboxSection = "infobox";
 
@@ -67,6 +69,30 @@ public interface NpcMaxHitConfig extends Config
 	default int timeout()
 	{
 		return 6;
+	}
+
+	@ConfigItem(
+		keyName = "combatLevelThreshold",
+		name = "Level Threshold",
+		description = "Will not display max hits for NPCs below this combat level (0 to disable)",
+		section = generalSection,
+		position = 3
+	)
+	default int combatLevelThreshold()
+	{
+		return 0;
+	}
+
+	@ConfigItem(
+		keyName = "filteredNpcIds",
+		name = "Filtered NPC IDs",
+		description = "Will not display max hits for these NPCs (comma-separated list of IDs, e.g. 3029,12191,2042)",
+		section = generalSection,
+		position = 4
+	)
+	default String filteredNpcIds()
+	{
+		return "";
 	}
 
 	@ConfigItem(
