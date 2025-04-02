@@ -22,14 +22,16 @@ public interface NpcMaxHitConfig extends Config
 	@ConfigSection(
 		name = "Overlay",
 		description = "Overlay appearance settings",
-		position = 1
+		position = 1,
+		closedByDefault = true
 	)
 	String overlaySection = "overlay";
 
 	@ConfigSection(
 		name = "Infobox",
 		description = "Infobox appearance settings",
-		position = 2
+		position = 2,
+		closedByDefault = true
 	)
 	String infoboxSection = "infobox";
 
