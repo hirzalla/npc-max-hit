@@ -1,8 +1,11 @@
 # NPC Max Hit
+
 [![Active Installs](http://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/installs/plugin/npc-max-hit)](https://runelite.net/plugin-hub/show/npc-max-hit)
 [![Plugin Rank](http://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/rank/plugin/npc-max-hit)](https://runelite.net/plugin-hub/show/npc-max-hit)
-
+---
 A RuneLite plugin that displays the max hit values for NPCs you are currently fighting, sourced from the OSRS Wiki.
+
+---
 
 ## Screenshots
 
@@ -18,9 +21,21 @@ A RuneLite plugin that displays the max hit values for NPCs you are currently fi
 - Fetches data directly from the OSRS Wiki
 - Supports multiple monster variants/phases (e.g. Zulrah, Phantom Muspah)
 - Display options:
-    - Detailed overlay with all max hit information (e.g. melee, ranged, magic, specials)
-    - Compact infobox showing highest max hit with a detailed tooltip on hover
+    - Overlay with all max hit information (e.g. melee, ranged, magic, specials)
+        - Compact mode to only display the highest max hit
+    - Infobox showing highest max hit with a detailed tooltip on hover
 - Auto-hides after combat inactivity
+- Filtering options:
+    - Combat level threshold to hide max hits for low-level NPCs
+    - Specific NPC IDs to exclude from display
+
+---
+
+## Configurations
+
+![Configurations](screenshots/configs.png)
+
+---
 
 ## Notes
 
@@ -32,12 +47,7 @@ The max hit values displayed:
 
 Please verify critical information directly on the Wiki.
 
-## Configurations
-
-- Toggle and position both the overlay and infobox displays
-- Customize fonts, colors, and transparency
-- Adjust combat timeout duration
-- Switch between detailed and compact display modes
+---
 
 ## Attribution
 
