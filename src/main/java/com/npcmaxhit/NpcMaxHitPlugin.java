@@ -121,7 +121,7 @@ public class NpcMaxHitPlugin extends Plugin
 			infoBoxManager.addInfoBox(infoBox);
 		}
 	}
-	
+
 	@Subscribe
 	public void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
@@ -129,6 +129,37 @@ public class NpcMaxHitPlugin extends Plugin
 		{
 			player = client.getLocalPlayer();
 		}
+	}
+
+	private boolean shouldFilterNpc(NPC npc)
+	{
+		int threshold = config.combatLevelThreshold();
+		if (threshold > 0 && npc.getCombatLevel() < threshold)
+		{
+			return true;
+		}
+
+		String filteredIds = config.filteredNpcIds().trim();
+		if (!filteredIds.isEmpty())
+		{
+			int npcId = npc.getId();
+			for (String idStr : filteredIds.split(","))
+			{
+				try
+				{
+					if (Integer.parseInt(idStr.trim()) == npcId)
+					{
+						return true;
+					}
+				}
+				catch (NumberFormatException e)
+				{
+					log.warn("Invalid NPC ID in filter: {}", idStr, e);
+				}
+			}
+		}
+
+		return false;
 	}
 
 	@Subscribe
@@ -144,18 +175,22 @@ public class NpcMaxHitPlugin extends Plugin
 		}
 
 		NPC npc = (NPC) actor;
-		int npcId = npc.getId();
+
+		if (shouldFilterNpc(npc))
+		{
+			return;
+		}
 
 		// Update last hitsplat time
 		lastHitsplatTime = System.currentTimeMillis();
 
 		// dont attempt to re-fetch data if the same npc is being attacked and overlay includes the npc
-		if (player.getInteracting() == npc && overlay.getCurrentNpcList().stream().anyMatch(data -> data.getNpcId() == npcId))
+		if (player.getInteracting() == npc && overlay.getCurrentNpcList().stream().anyMatch(data -> data.getNpcId() == npc.getId()))
 		{
 			return;
 		}
 
-		fetchAndDisplayMaxHitData(npcId);
+		fetchAndDisplayMaxHitData(npc.getId());
 	}
 
 	public void fetchAndDisplayMaxHitData(int npcId)
@@ -168,7 +203,6 @@ public class NpcMaxHitPlugin extends Plugin
 				clientThread.invoke(() -> {
 					overlay.updateNpcDataList(dataList);
 					updateInfoBox(dataList);
-//					client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Max hit data for NPC ID: " + npcId + " displayed.", null);
 				});
 			}
 		});

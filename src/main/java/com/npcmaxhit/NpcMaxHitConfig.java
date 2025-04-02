@@ -70,6 +70,30 @@ public interface NpcMaxHitConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "combatLevelThreshold",
+		name = "Level Threshold",
+		description = "Will not display max hits for NPCs below this combat level (0 to disable)",
+		section = generalSection,
+		position = 3
+	)
+	default int combatLevelThreshold()
+	{
+		return 0;
+	}
+
+	@ConfigItem(
+		keyName = "filteredNpcIds",
+		name = "Filtered NPC IDs",
+		description = "Will not display max hits for these NPCs (comma-separated list of IDs, e.g. 3029,12191,2042)",
+		section = generalSection,
+		position = 4
+	)
+	default String filteredNpcIds()
+	{
+		return "";
+	}
+
+	@ConfigItem(
 		keyName = "compact",
 		name = "Compact Mode",
 		description = "Only show the highest max hit value when multiple attack styles are present",
