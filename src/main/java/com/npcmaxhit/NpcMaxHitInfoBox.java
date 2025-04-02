@@ -1,10 +1,12 @@
 package com.npcmaxhit;
 
 import java.awt.Color;
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.util.Map;
 import java.util.List;
+import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.infobox.InfoBox;
 import net.runelite.client.ui.overlay.infobox.InfoBoxPriority;
 import net.runelite.client.util.ColorUtil;
@@ -40,16 +42,20 @@ public class NpcMaxHitInfoBox extends InfoBox
 		BufferedImage image = new BufferedImage(baseImage.getWidth(), baseImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g = image.createGraphics();
 
+		g.setFont(FontManager.getRunescapeSmallFont());
 		g.drawImage(baseImage, 0, 0, null);
 
+		final FontMetrics metrics = g.getFontMetrics();
 		String text = String.valueOf(dataList.stream()
 			.mapToInt(NpcMaxHitData::getHighestMaxHit)
 			.max()
 			.orElse(0));
 
-		int x = image.getWidth() / 2 - g.getFontMetrics().stringWidth(text) / 2;
-		int y = image.getHeight() / 2 + g.getFontMetrics().getAscent() / 2;
+		int x = image.getWidth() / 2 - metrics.stringWidth(text) / 2;
+		int y = image.getHeight() / 2 - metrics.getHeight() / 2 + metrics.getAscent() + 2;
 
+		g.setColor(Color.BLACK);
+		g.drawString(text, x + 1, y + 1);
 		g.setColor(config.infoboxTextColor());
 		g.drawString(text, x, y);
 
