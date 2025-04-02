@@ -96,13 +96,25 @@ public interface NpcMaxHitConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "compact",
-		name = "Compact Mode",
+		keyName = "compactMaxHits",
+		name = "Compact Max Hits",
 		description = "Only show the highest max hit value when multiple attack styles are present",
 		section = overlaySection,
 		position = 0
 	)
-	default boolean compact()
+	default boolean compactMaxHits()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "compactNames",
+		name = "Compact NPC Names",
+		description = "Show simplified NPC names without version/variant information, if available (e.g. 'Vorkath' instead of 'Vorkath (Post-quest)') <br>Note: This can make it harder to identify the version if there are multiple variants of the same NPC ID (e.g. DT2 bosses, Araxxor, etc.)",
+		section = overlaySection,
+		position = 1
+	)
+	default boolean compactNames()
 	{
 		return false;
 	}

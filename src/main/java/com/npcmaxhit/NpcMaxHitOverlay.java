@@ -60,11 +60,11 @@ public class NpcMaxHitOverlay extends OverlayPanel
 		for (NpcMaxHitData data : displayList)
 		{
 			panelComponent.getChildren().add(TitleComponent.builder()
-				.text(data.getDisplayName())
+				.text(config.compactNames() ? data.getNpcName() : data.getDisplayName())
 				.color(config.overlayTitleColor())
 				.build());
 
-			if (config.compact())
+			if (config.compactMaxHits())
 			{
 				panelComponent.getChildren().add(LineComponent.builder()
 					.left("Max Hit")

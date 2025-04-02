@@ -22,7 +22,7 @@ A RuneLite plugin that displays the max hit values for NPCs you are currently fi
 - Supports multiple monster variants/phases (e.g. Zulrah, Phantom Muspah)
 - Display options:
     - Overlay with all max hit information (e.g. melee, ranged, magic, specials)
-        - Compact mode to only display the highest max hit
+        - Compact mode to only display the highest max hit and simplified NPC name
     - Infobox showing highest max hit with a detailed tooltip on hover
 - Auto-hides after combat inactivity
 - Filtering options:
