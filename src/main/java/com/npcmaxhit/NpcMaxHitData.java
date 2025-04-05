@@ -1,5 +1,6 @@
 package com.npcmaxhit;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -11,9 +12,9 @@ public class NpcMaxHitData
 	String npcName;
 	String version;
 	int npcId;
-	Map<String, Integer> maxHits;
+	Map<String, String> maxHits;
 
-	public NpcMaxHitData(String fullName, int npcId, Map<String, Integer> maxHits)
+	public NpcMaxHitData(String fullName, int npcId, Map<String, String> maxHits)
 	{
 		String[] parts = fullName.split("#", 2);
 		this.npcName = parts[0].trim().replaceAll("_", " ");
@@ -55,7 +56,23 @@ public class NpcMaxHitData
 	public int getHighestMaxHit()
 	{
 		return maxHits.values().stream()
-			.mapToInt(Integer::intValue)
+			.mapToInt(s -> {
+				try
+				{
+					if (s.contains("+")) // e.g. NpcID.FRAGMENT_OF_SEREN
+					{
+						// Split on + and sum all numbers
+						return Arrays.stream(s.split("\\+"))
+							.mapToInt(num -> Integer.parseInt(num.trim()))
+							.sum();
+					}
+					return Integer.parseInt(s.trim());
+				}
+				catch (NumberFormatException e)
+				{
+					return 0;
+				}
+			})
 			.max()
 			.orElse(0);
 	}
