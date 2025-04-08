@@ -146,9 +146,9 @@ public class NpcMaxHitPlugin extends Plugin
 	@Subscribe
 	public void onMenuEntryAdded(MenuEntryAdded event) {
 		if (event.getType() != MenuAction.NPC_SECOND_OPTION.getId()) {
-			// can use any npc option
 			return;
 		}
+
 		NPC npc = event.getMenuEntry().getNpc();
 		if (npc == null || npc.getCombatLevel() <= 0 || shouldFilterNpc(npc)) {
 			return;
@@ -161,16 +161,17 @@ public class NpcMaxHitPlugin extends Plugin
 		}
 
 		List<NpcMaxHitData> npcMaxHitData = wikiService.getMaxHitData(npc.getId());
-		if (npcMaxHitData.isEmpty()) return;
+		if (npcMaxHitData.isEmpty()) {
+			return;
+		}
+
 		String menuEntry = "Max Hit: " + npcMaxHitData.get(0).getHighestMaxHit();
 		client.getMenu().createMenuEntry(client.getMenu().getMenuEntries().length)
-				.setOption(menuEntry).onClick(
-						(entry) -> {
-							// Update last hitsplat time to make it timeout after 6s
-							lastHitsplatTime = System.currentTimeMillis();
-							displayMaxHitData(npcMaxHitData);
-						}
-				);
+				.setOption(menuEntry)
+				.onClick((entry) -> {
+					lastHitsplatTime = System.currentTimeMillis();
+					displayMaxHitData(npcMaxHitData);
+				});
 	}
 
 	private void displayMaxHitData(List<NpcMaxHitData> dataList) {
