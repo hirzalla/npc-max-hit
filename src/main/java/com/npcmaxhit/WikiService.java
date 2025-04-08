@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 public class WikiService
 {
 	private static final String WIKI_API_URL = "https://oldschool.runescape.wiki/api.php?action=ask&format=json&query=[[NPC ID::%d]]|?Max hit";
-	private static final Pattern MAX_HIT_VALUE_PATTERN = Pattern.compile("(\\d+)\\s*\\(([^)]+)\\)");
+	private static final Pattern MAX_HIT_VALUE_PATTERN = Pattern.compile("(.+?)\\s*\\(([^)]+)\\)");
 	private final Map<Integer, List<NpcMaxHitData>> maxHitCache = new HashMap<>();
 
 	@Inject
@@ -75,7 +75,7 @@ public class WikiService
 
 					if (printouts.has("Max hit") && printouts.getAsJsonArray("Max hit").size() > 0)
 					{
-						Map<String, Integer> maxHits = new HashMap<>();
+						Map<String, String> maxHits = new HashMap<>();
 						var maxHitArray = printouts.getAsJsonArray("Max hit");
 
 						if (maxHitArray.size() > 1)
@@ -116,7 +116,7 @@ public class WikiService
 		return Collections.emptyList();
 	}
 
-	private void parseMaxHitValues(String maxHitString, Map<String, Integer> maxHits)
+	private void parseMaxHitValues(String maxHitString, Map<String, String> maxHits)
 	{
 		// Remove HTML line break tags and split on commas
 		String[] hits = maxHitString.replaceAll("<br/?>", ",").split(",");
@@ -128,18 +128,18 @@ public class WikiService
 
 			if (matcher.find())
 			{
-				int value = Integer.parseInt(matcher.group(1));
+				String value = matcher.group(1).trim();
 				String style = matcher.group(2).trim();
 				maxHits.put(style, value);
 			}
 			else
 			{
-				try
+				// If it's not empty, store as is
+				if (!hit.isEmpty())
 				{
-					int value = Integer.parseInt(hit);
-					maxHits.put("Max Hit", value);
+					maxHits.put("Max Hit", hit);
 				}
-				catch (NumberFormatException ignored)
+				else
 				{
 					log.warn("Invalid max hit value: {}", hit);
 				}

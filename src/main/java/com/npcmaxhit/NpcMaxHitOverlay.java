@@ -78,7 +78,7 @@ public class NpcMaxHitOverlay extends OverlayPanel
 				data.getMaxHits().forEach((style, hit) ->
 					panelComponent.getChildren().add(LineComponent.builder()
 						.left(style)
-						.right(Integer.toString(hit))
+						.right(hit)
 						.leftColor(config.overlayTextColor())
 						.rightColor(config.overlayValueColor())
 						.build())
