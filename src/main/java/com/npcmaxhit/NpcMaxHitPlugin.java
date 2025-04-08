@@ -252,7 +252,7 @@ public class NpcMaxHitPlugin extends Plugin
 	{
 		executor.submit(() -> {
 			List<NpcMaxHitData> dataList = wikiService.getMaxHitData(npcId);
-			if (!dataList.isEmpty() && shouldDisplay)
+			if (shouldDisplay)
 			{
 				displayMaxHitData(dataList);
 			}
