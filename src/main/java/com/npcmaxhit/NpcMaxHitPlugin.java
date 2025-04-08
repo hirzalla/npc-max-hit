@@ -169,6 +169,7 @@ public class NpcMaxHitPlugin extends Plugin
 		client.getMenu().createMenuEntry(client.getMenu().getMenuEntries().length)
 				.setOption(menuEntry)
 				.onClick((entry) -> {
+					// Since we use lastHitsplatTime for timeout, we update it here as well
 					lastHitsplatTime = System.currentTimeMillis();
 					displayMaxHitData(npcMaxHitData);
 				});
