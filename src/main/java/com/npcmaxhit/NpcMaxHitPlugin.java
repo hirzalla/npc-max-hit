@@ -127,7 +127,7 @@ public class NpcMaxHitPlugin extends Plugin
 	@Subscribe
 	public void onNpcSpawned(NpcSpawned event) {
 		NPC npc = event.getNpc();
-		if (event.getActor().getCombatLevel() <= 0) {
+		if (event.getActor().getCombatLevel() <= 0 || shouldFilterNpc(npc)) {
 			return;
 		}
 		fetchAndDisplayMaxHitData(npc.getId(), false);
@@ -143,7 +143,7 @@ public class NpcMaxHitPlugin extends Plugin
 			return;
 		}
 		NPC npc = event.getMenuEntry().getNpc();
-		if (npc == null || npc.getCombatLevel() <= 0) {
+		if (npc == null || npc.getCombatLevel() <= 0 || shouldFilterNpc(npc)) {
 			return;
 		}
 
