@@ -133,11 +133,10 @@ public class NpcMaxHitPlugin extends Plugin
 		}
 	}
 
-	//
 	@Subscribe
 	public void onNpcSpawned(NpcSpawned event) {
 		NPC npc = event.getNpc();
-		if (event.getActor().getCombatLevel() <= 0 || shouldFilterNpc(npc)) {
+		if (event.getActor().getCombatLevel() <= 0 || shouldFilterNpc(npc) || npc.getComposition().isInteractible()) {
 			return;
 		}
 		fetchAndDisplayMaxHitData(npc.getId(), false);
