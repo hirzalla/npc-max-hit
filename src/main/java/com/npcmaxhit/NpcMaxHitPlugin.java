@@ -145,11 +145,13 @@ public class NpcMaxHitPlugin extends Plugin
 
 	@Subscribe
 	public void onMenuEntryAdded(MenuEntryAdded event) {
-		if (event.getType() != MenuAction.NPC_FIRST_OPTION.getId() &&
-				event.getType() != MenuAction.NPC_SECOND_OPTION.getId() &&
-				event.getType() != MenuAction.NPC_THIRD_OPTION.getId() &&
-				event.getType() != MenuAction.NPC_FOURTH_OPTION.getId() &&
-				event.getType() != MenuAction.NPC_FIFTH_OPTION.getId()) {
+		if (!List.of(
+				MenuAction.NPC_FIRST_OPTION.getId(),
+				MenuAction.NPC_SECOND_OPTION.getId(),
+				MenuAction.NPC_THIRD_OPTION.getId(),
+				MenuAction.NPC_FOURTH_OPTION.getId(),
+				MenuAction.NPC_FIFTH_OPTION.getId()
+		).contains(event.getType())) {
 			return;
 		}
 		NPC npc = event.getMenuEntry().getNpc();
