@@ -60,11 +60,23 @@ public interface NpcMaxHitConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "showMaxHitInMenus",
+		name = "Show Max Hit in Menus",
+		description = "Show the max hit information in right-click menus",
+		section = generalSection,
+		position = 2
+	)
+	default boolean showMaxHitInMenus()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "timeout",
 		name = "Display Timeout",
 		description = "Time in seconds before the displays are hidden after the player stops attacking",
 		section = generalSection,
-		position = 2
+		position = 3
 	)
 	default int timeout()
 	{
@@ -76,7 +88,7 @@ public interface NpcMaxHitConfig extends Config
 		name = "Level Threshold",
 		description = "Will not display max hits for NPCs below this combat level (0 to disable)",
 		section = generalSection,
-		position = 3
+		position = 4
 	)
 	default int combatLevelThreshold()
 	{
@@ -88,7 +100,7 @@ public interface NpcMaxHitConfig extends Config
 		name = "Filtered NPC IDs",
 		description = "Will not display max hits for these NPCs (comma-separated list of IDs, e.g. 3029,12191,2042)",
 		section = generalSection,
-		position = 4
+		position = 5
 	)
 	default String filteredNpcIds()
 	{

@@ -8,15 +8,17 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
-import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Hitsplat;
 import net.runelite.api.NPC;
-import net.runelite.api.events.CommandExecuted;
 import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.MenuEntryAdded;
+import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.HitsplatApplied;
+import net.runelite.api.MenuAction;
+import net.runelite.api.MenuEntry;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -131,6 +133,73 @@ public class NpcMaxHitPlugin extends Plugin
 		}
 	}
 
+	@Subscribe
+	public void onNpcSpawned(NpcSpawned event)
+	{
+		if (!config.showMaxHitInMenus())
+		{
+			return;
+		}
+		NPC npc = event.getNpc();
+		if (event.getActor().getCombatLevel() <= 0 || shouldFilterNpc(npc) || !npc.getComposition().isInteractible())
+		{
+			return;
+		}
+		fetchAndDisplayMaxHitData(npc.getId(), false);
+	}
+
+	@Subscribe
+	public void onMenuEntryAdded(MenuEntryAdded event)
+	{
+		if (!config.showMaxHitInMenus() || event.getType() != MenuAction.NPC_SECOND_OPTION.getId())
+		{
+			return;
+		}
+
+		NPC npc = event.getMenuEntry().getNpc();
+		if (npc == null || npc.getCombatLevel() <= 0 || shouldFilterNpc(npc))
+		{
+			return;
+		}
+
+		for (MenuEntry menuEntry : client.getMenu().getMenuEntries())
+		{
+			if (menuEntry.getOption().contains("Max Hit"))
+			{
+				return;
+			}
+		}
+
+		List<NpcMaxHitData> npcMaxHitData = wikiService.getMaxHitData(npc.getId());
+		if (npcMaxHitData.isEmpty())
+		{
+			return;
+		}
+
+		String menuEntry = "Max Hit: " + npcMaxHitData.get(0).getHighestMaxHit();
+		client.getMenu().createMenuEntry(client.getMenu().getMenuEntries().length)
+			.setOption(menuEntry)
+			.onClick((entry) -> {
+				// Since we use lastHitsplatTime for timeout, we update it here as well
+				lastHitsplatTime = System.currentTimeMillis();
+				displayMaxHitData(npcMaxHitData);
+			});
+	}
+
+	private void displayMaxHitData(List<NpcMaxHitData> dataList)
+	{
+		if (dataList.isEmpty())
+		{
+			return;
+		}
+
+		clientThread.invoke(() -> {
+			overlay.updateNpcDataList(dataList);
+			updateInfoBox(dataList);
+		});
+	}
+
+
 	private boolean shouldFilterNpc(NPC npc)
 	{
 		int threshold = config.combatLevelThreshold();
@@ -190,20 +259,16 @@ public class NpcMaxHitPlugin extends Plugin
 			return;
 		}
 
-		fetchAndDisplayMaxHitData(npc.getId());
+		fetchAndDisplayMaxHitData(npc.getId(), true);
 	}
 
-	public void fetchAndDisplayMaxHitData(int npcId)
+	public void fetchAndDisplayMaxHitData(int npcId, boolean shouldDisplay)
 	{
 		executor.submit(() -> {
 			List<NpcMaxHitData> dataList = wikiService.getMaxHitData(npcId);
-
-			if (!dataList.isEmpty())
+			if (shouldDisplay)
 			{
-				clientThread.invoke(() -> {
-					overlay.updateNpcDataList(dataList);
-					updateInfoBox(dataList);
-				});
+				displayMaxHitData(dataList);
 			}
 		});
 	}
