@@ -134,48 +134,62 @@ public class NpcMaxHitPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onNpcSpawned(NpcSpawned event) {
+	public void onNpcSpawned(NpcSpawned event)
+	{
+		if (!config.showMaxHitInMenus())
+		{
+			return;
+		}
 		NPC npc = event.getNpc();
-		if (event.getActor().getCombatLevel() <= 0 || shouldFilterNpc(npc) || !npc.getComposition().isInteractible()) {
+		if (event.getActor().getCombatLevel() <= 0 || shouldFilterNpc(npc) || !npc.getComposition().isInteractible())
+		{
 			return;
 		}
 		fetchAndDisplayMaxHitData(npc.getId(), false);
 	}
 
 	@Subscribe
-	public void onMenuEntryAdded(MenuEntryAdded event) {
-		if (event.getType() != MenuAction.NPC_SECOND_OPTION.getId()) {
+	public void onMenuEntryAdded(MenuEntryAdded event)
+	{
+		if (!config.showMaxHitInMenus() || event.getType() != MenuAction.NPC_SECOND_OPTION.getId())
+		{
 			return;
 		}
 
 		NPC npc = event.getMenuEntry().getNpc();
-		if (npc == null || npc.getCombatLevel() <= 0 || shouldFilterNpc(npc)) {
+		if (npc == null || npc.getCombatLevel() <= 0 || shouldFilterNpc(npc))
+		{
 			return;
 		}
 
-		for (MenuEntry menuEntry : client.getMenu().getMenuEntries()) {
-			if (menuEntry.getOption().contains("Max Hit")) {
+		for (MenuEntry menuEntry : client.getMenu().getMenuEntries())
+		{
+			if (menuEntry.getOption().contains("Max Hit"))
+			{
 				return;
 			}
 		}
 
 		List<NpcMaxHitData> npcMaxHitData = wikiService.getMaxHitData(npc.getId());
-		if (npcMaxHitData.isEmpty()) {
+		if (npcMaxHitData.isEmpty())
+		{
 			return;
 		}
 
 		String menuEntry = "Max Hit: " + npcMaxHitData.get(0).getHighestMaxHit();
 		client.getMenu().createMenuEntry(client.getMenu().getMenuEntries().length)
-				.setOption(menuEntry)
-				.onClick((entry) -> {
-					// Since we use lastHitsplatTime for timeout, we update it here as well
-					lastHitsplatTime = System.currentTimeMillis();
-					displayMaxHitData(npcMaxHitData);
-				});
+			.setOption(menuEntry)
+			.onClick((entry) -> {
+				// Since we use lastHitsplatTime for timeout, we update it here as well
+				lastHitsplatTime = System.currentTimeMillis();
+				displayMaxHitData(npcMaxHitData);
+			});
 	}
 
-	private void displayMaxHitData(List<NpcMaxHitData> dataList) {
-		if (dataList.isEmpty()) {
+	private void displayMaxHitData(List<NpcMaxHitData> dataList)
+	{
+		if (dataList.isEmpty())
+		{
 			return;
 		}
 
