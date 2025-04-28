@@ -46,10 +46,12 @@ public class NpcMaxHitInfoBox extends InfoBox
 		g.drawImage(baseImage, 0, 0, null);
 
 		final FontMetrics metrics = g.getFontMetrics();
-		String text = String.valueOf(dataList.stream()
+		int maxHit = dataList.stream()
 			.mapToInt(NpcMaxHitData::getHighestMaxHit)
 			.max()
-			.orElse(0));
+			.orElse(-1);
+
+		String text = maxHit >= 0 ? String.valueOf(maxHit) : "?";
 
 		int x = image.getWidth() / 2 - metrics.stringWidth(text) / 2;
 		int y = image.getHeight() / 2 - metrics.getHeight() / 2 + metrics.getAscent() + 2;

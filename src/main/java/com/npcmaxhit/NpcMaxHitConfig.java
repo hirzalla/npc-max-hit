@@ -68,7 +68,7 @@ public interface NpcMaxHitConfig extends Config
 	)
 	default boolean showMaxHitInMenus()
 	{
-		return true;
+		return false;
 	}
 
 	@ConfigItem(

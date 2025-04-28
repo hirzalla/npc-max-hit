@@ -9,10 +9,17 @@ import lombok.Value;
 @Value
 public class NpcMaxHitData
 {
+	private static final int MAX_HIT_LENGTH = 25;
+
 	String npcName;
 	String version;
 	int npcId;
 	Map<String, String> maxHits;
+
+	private String truncateHitValue(String value)
+	{
+		return value.length() > MAX_HIT_LENGTH ? value.substring(0, MAX_HIT_LENGTH) + "..." : value;
+	}
 
 	public NpcMaxHitData(String fullName, int npcId, Map<String, String> maxHits)
 	{
@@ -21,7 +28,7 @@ public class NpcMaxHitData
 		this.version = parts.length > 1 ? parts[1].split(",")[0] : null;
 		this.npcId = npcId;
 		this.maxHits = new TreeMap<>((a, b) -> toTitleCase(a).compareTo(toTitleCase(b)));
-		maxHits.forEach((style, value) -> this.maxHits.put(toTitleCase(style), value));
+		maxHits.forEach((style, value) -> this.maxHits.put(toTitleCase(style), truncateHitValue(value)));
 	}
 
 	private String toTitleCase(String input)
@@ -59,12 +66,20 @@ public class NpcMaxHitData
 			.mapToInt(s -> {
 				try
 				{
-					if (s.contains("+")) // e.g. NpcID.FRAGMENT_OF_SEREN
+					s = s.replaceAll("\\s+", ""); // remove any whitespace
+					if (s.contains("+")) // 12+3 -> 15
 					{
-						// Split on + and sum all numbers
 						return Arrays.stream(s.split("\\+"))
 							.mapToInt(num -> Integer.parseInt(num.trim()))
 							.sum();
+					}
+					else if (s.contains("x")) // 12x3 -> 36
+					{
+						String[] parts = s.split("x");
+						if (parts.length == 2)
+						{
+							return Integer.parseInt(parts[0].trim()) * Integer.parseInt(parts[1].trim());
+						}
 					}
 					return Integer.parseInt(s.trim());
 				}
@@ -74,6 +89,6 @@ public class NpcMaxHitData
 				}
 			})
 			.max()
-			.orElse(0);
+			.orElse(-1);
 	}
 }

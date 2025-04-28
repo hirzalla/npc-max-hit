@@ -68,7 +68,7 @@ public class NpcMaxHitOverlay extends OverlayPanel
 			{
 				panelComponent.getChildren().add(LineComponent.builder()
 					.left("Max Hit")
-					.right(Integer.toString(data.getHighestMaxHit()))
+					.right(data.getHighestMaxHit() >= 0 ? String.valueOf(data.getHighestMaxHit()) : "?")
 					.leftColor(config.overlayTextColor())
 					.rightColor(config.overlayValueColor())
 					.build());
@@ -89,3 +89,4 @@ public class NpcMaxHitOverlay extends OverlayPanel
 		return super.render(graphics);
 	}
 }
+

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CompletableFuture;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
@@ -17,6 +18,7 @@ import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.HitsplatApplied;
+import net.runelite.api.events.CommandExecuted;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
 import net.runelite.client.callback.ClientThread;
@@ -136,16 +138,12 @@ public class NpcMaxHitPlugin extends Plugin
 	@Subscribe
 	public void onNpcSpawned(NpcSpawned event)
 	{
-		if (!config.showMaxHitInMenus())
-		{
-			return;
-		}
 		NPC npc = event.getNpc();
-		if (event.getActor().getCombatLevel() <= 0 || shouldFilterNpc(npc) || !npc.getComposition().isInteractible())
+		if (!config.showMaxHitInMenus() || event.getActor().getCombatLevel() <= 0 || shouldFilterNpc(npc) || !npc.getComposition().isInteractible())
 		{
 			return;
 		}
-		fetchAndDisplayMaxHitData(npc.getId(), false);
+		fetchMaxHitData(npc.getId());
 	}
 
 	@Subscribe
@@ -176,7 +174,8 @@ public class NpcMaxHitPlugin extends Plugin
 			return;
 		}
 
-		String menuEntry = "Max Hit: " + npcMaxHitData.get(0).getHighestMaxHit();
+		int maxHit = npcMaxHitData.get(0).getHighestMaxHit();
+		String menuEntry = "Max Hit: " + (maxHit >= 0 ? String.valueOf(maxHit) : "?");
 		client.getMenu().createMenuEntry(client.getMenu().getMenuEntries().length)
 			.setOption(menuEntry)
 			.onClick((entry) -> {
@@ -199,6 +198,10 @@ public class NpcMaxHitPlugin extends Plugin
 		});
 	}
 
+	private CompletableFuture<List<NpcMaxHitData>> fetchMaxHitData(int npcId)
+	{
+		return CompletableFuture.supplyAsync(() -> wikiService.getMaxHitData(npcId), executor);
+	}
 
 	private boolean shouldFilterNpc(NPC npc)
 	{
@@ -259,18 +262,7 @@ public class NpcMaxHitPlugin extends Plugin
 			return;
 		}
 
-		fetchAndDisplayMaxHitData(npc.getId(), true);
-	}
-
-	public void fetchAndDisplayMaxHitData(int npcId, boolean shouldDisplay)
-	{
-		executor.submit(() -> {
-			List<NpcMaxHitData> dataList = wikiService.getMaxHitData(npcId);
-			if (shouldDisplay)
-			{
-				displayMaxHitData(dataList);
-			}
-		});
+		fetchMaxHitData(npc.getId()).thenAccept(this::displayMaxHitData);
 	}
 
 	@Subscribe
@@ -290,20 +282,35 @@ public class NpcMaxHitPlugin extends Plugin
 		}
 	}
 
-//	@Subscribe
-//	public void onCommandExecuted(CommandExecuted event)
-//	{
-//		String command = event.getCommand().toLowerCase();
-//		if (!command.equals("maxhit"))
-//		{
-//			return;
-//		}
-//
-//		String[] arg = event.getArguments();
-//		int npcId = Integer.parseInt(arg[0]);
-//
-//		fetchAndDisplayMaxHitData(npcId);
-//	}
+	@Subscribe
+	public void onCommandExecuted(CommandExecuted event)
+	{
+		String command = event.getCommand().toLowerCase();
+		// ::npcmaxhit 3029
+		if (!command.equals("npcmaxhit"))
+		{
+			return;
+		}
+
+		String[] args = event.getArguments();
+		if (args.length == 0)
+		{
+			return;
+		}
+
+		try
+		{
+			int npcId = Integer.parseInt(args[0]);
+
+			lastHitsplatTime = System.currentTimeMillis();
+
+			fetchMaxHitData(npcId).thenAccept(this::displayMaxHitData);
+		}
+		catch (NumberFormatException e)
+		{
+			log.warn("Invalid command arguments", e);
+		}
+	}
 
 	@Provides
 	NpcMaxHitConfig provideConfig(ConfigManager configManager)
