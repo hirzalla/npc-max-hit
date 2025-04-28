@@ -14,6 +14,7 @@ A RuneLite plugin that displays the max hit values for NPCs you are currently fi
 | Multiple Variants/Phases | ![Multiple Forms Example 1](screenshots/scurrius_1.png) | ![Multiple Forms Example 2](screenshots/scurrius_2.png) |
 | Overlay                  | ![Overlay Example 1](screenshots/overlay_1.png)         | ![Overlay Example 2](screenshots/overlay_2.png)         |
 | Infobox                  | ![Infobox Example 1](screenshots/infobox_1.png)         | ![Infobox Example 2](screenshots/infobox_2.png)         |
+| Menu Options             | ![Menu Example 1](screenshots/menu_1.png)               | ![Menu Example 2](screenshots/menu_2.png)               |
 
 ## Features
 
@@ -24,6 +25,8 @@ A RuneLite plugin that displays the max hit values for NPCs you are currently fi
     - Overlay with all max hit information (e.g. melee, ranged, magic, specials)
         - Compact mode to only display the highest max hit and simplified NPC name
     - Infobox showing highest max hit with a detailed tooltip on hover
+    - Right-click menu options showing max hits
+    - Max hit lookup when examining NPCs
 - Auto-hides after combat inactivity
 - Filtering options:
     - Combat level threshold to hide max hits for low-level NPCs

@@ -35,6 +35,14 @@ public interface NpcMaxHitConfig extends Config
 	)
 	String infoboxSection = "infobox";
 
+	@ConfigSection(
+		name = "Menu Options",
+		description = "Menu entry appearance settings",
+		position = 3,
+		closedByDefault = true
+	)
+	String menuSection = "menu";
+
 	@ConfigItem(
 		keyName = "showOverlay",
 		name = "Show Overlay",
@@ -60,15 +68,27 @@ public interface NpcMaxHitConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "showMaxHitInMenus",
-		name = "Show Max Hit in Menus",
-		description = "Show the max hit information in right-click menus",
+		keyName = "showInMenu",
+		name = "Show in NPC Right-click Menus",
+		description = "Show the highest max hit value next to NPC menu options (e.g. Attack, Examine) <br>Can be configured in the Menu Options section.",
 		section = generalSection,
 		position = 2
 	)
-	default boolean showMaxHitInMenus()
+	default boolean showInMenu()
 	{
 		return false;
+	}
+
+	@ConfigItem(
+		keyName = "displayMaxHitOnExamine",
+		name = "Lookup on Examine",
+		description = "Display max hit information when examining NPCs",
+		section = generalSection,
+		position = 3
+	)
+	default boolean displayMaxHitOnExamine()
+	{
+		return true;
 	}
 
 	@ConfigItem(
@@ -76,7 +96,7 @@ public interface NpcMaxHitConfig extends Config
 		name = "Display Timeout",
 		description = "Time in seconds before the displays are hidden after the player stops attacking",
 		section = generalSection,
-		position = 3
+		position = 4
 	)
 	default int timeout()
 	{
@@ -88,7 +108,7 @@ public interface NpcMaxHitConfig extends Config
 		name = "Level Threshold",
 		description = "Will not display max hits for NPCs below this combat level (0 to disable)",
 		section = generalSection,
-		position = 4
+		position = 5
 	)
 	default int combatLevelThreshold()
 	{
@@ -100,7 +120,7 @@ public interface NpcMaxHitConfig extends Config
 		name = "Filtered NPC IDs",
 		description = "Will not display max hits for these NPCs (comma-separated list of IDs, e.g. 3029,12191,2042)",
 		section = generalSection,
-		position = 5
+		position = 6
 	)
 	default String filteredNpcIds()
 	{
@@ -277,7 +297,7 @@ public interface NpcMaxHitConfig extends Config
 	@ConfigItem(
 		keyName = "infoboxTooltipTextColor",
 		name = "Tooltip Text Color",
-		description = "Color of the text in the infobox tooltip (NPC name, attack style/type)",
+		description = "Color of the text in the infobox tooltip (attack style/type)",
 		section = infoboxSection,
 		position = 98
 	)
@@ -298,4 +318,71 @@ public interface NpcMaxHitConfig extends Config
 		return Color.YELLOW;
 	}
 
+	@ConfigItem(
+		keyName = "showOnAttackOption",
+		name = "Show on Attack Option",
+		description = "Show max hit on the Attack menu option",
+		section = menuSection,
+		position = 0
+	)
+	default boolean showOnAttackOption()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "showOnExamineOption",
+		name = "Show on Examine Option",
+		description = "Show max hit on the Examine menu option",
+		section = menuSection,
+		position = 1
+	)
+	default boolean showOnExamineOption()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "menuDisplayStyle",
+		name = "Display Style",
+		description = "How to display the max hit in menu entries",
+		section = menuSection,
+		position = 2
+	)
+	default MenuDisplayStyle menuDisplayStyle()
+	{
+		return MenuDisplayStyle.WITH_LABEL;
+	}
+
+	@ConfigItem(
+		keyName = "menuMaxHitColor",
+		name = "Menu Max Hit Color",
+		description = "Color of the max hit value shown in menu entries",
+		section = menuSection,
+		position = 3
+	)
+	default Color menuMaxHitColor()
+	{
+		return Color.YELLOW;
+	}
+
+	@Getter
+	enum MenuDisplayStyle
+	{
+		NUMBER_ONLY("Number Only"),
+		WITH_LABEL("With Label");
+
+		private final String name;
+
+		MenuDisplayStyle(String name)
+		{
+			this.name = name;
+		}
+
+		@Override
+		public String toString()
+		{
+			return name;
+		}
+	}
 }

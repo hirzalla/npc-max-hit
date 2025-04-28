@@ -39,7 +39,7 @@ import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 public class NpcMaxHitPlugin extends Plugin
 {
 	private Actor player;
-	private long lastHitsplatTime = 0;
+	private long lastDisplayTime = 0;
 	private ExecutorService executor;
 
 	@Inject
@@ -139,7 +139,8 @@ public class NpcMaxHitPlugin extends Plugin
 	public void onNpcSpawned(NpcSpawned event)
 	{
 		NPC npc = event.getNpc();
-		if (!config.showMaxHitInMenus() || event.getActor().getCombatLevel() <= 0 || shouldFilterNpc(npc) || !npc.getComposition().isInteractible())
+
+		if (!config.showInMenu() || event.getActor().getCombatLevel() <= 0 || shouldFilterNpc(npc) || !npc.getComposition().isInteractible())
 		{
 			return;
 		}
@@ -149,40 +150,58 @@ public class NpcMaxHitPlugin extends Plugin
 	@Subscribe
 	public void onMenuEntryAdded(MenuEntryAdded event)
 	{
-		if (!config.showMaxHitInMenus() || event.getType() != MenuAction.NPC_SECOND_OPTION.getId())
+		if (!config.showInMenu() && !config.displayMaxHitOnExamine())
 		{
 			return;
 		}
 
-		NPC npc = event.getMenuEntry().getNpc();
+		MenuEntry menuEntry = event.getMenuEntry();
+		NPC npc = menuEntry.getNpc();
 		if (npc == null || npc.getCombatLevel() <= 0 || shouldFilterNpc(npc))
 		{
 			return;
 		}
 
-		for (MenuEntry menuEntry : client.getMenu().getMenuEntries())
+		boolean isAttackOption = event.getType() == MenuAction.NPC_SECOND_OPTION.getId() && event.getOption().equals("Attack");
+		boolean isExamineOption = event.getType() == MenuAction.EXAMINE_NPC.getId();
+
+		// on examine click action
+		if (isExamineOption && config.displayMaxHitOnExamine())
 		{
-			if (menuEntry.getOption().contains("Max Hit"))
+			List<NpcMaxHitData> npcMaxHitData = wikiService.getMaxHitData(npc.getId());
+			if (!npcMaxHitData.isEmpty())
 			{
-				return;
+				menuEntry.onClick(me -> {
+					lastDisplayTime = System.currentTimeMillis();
+					displayMaxHitData(npcMaxHitData);
+				});
 			}
 		}
 
-		List<NpcMaxHitData> npcMaxHitData = wikiService.getMaxHitData(npc.getId());
-		if (npcMaxHitData.isEmpty())
+		// add max hit to enabled menu options
+		if (config.showInMenu() &&
+			((isAttackOption && config.showOnAttackOption()) ||
+				(isExamineOption && config.showOnExamineOption())))
 		{
-			return;
-		}
+			List<NpcMaxHitData> npcMaxHitData = wikiService.getMaxHitData(npc.getId());
+			if (!npcMaxHitData.isEmpty())
+			{
+				int maxHit = npcMaxHitData.get(0).getHighestMaxHit();
+				// skip if max hit is not computed i.e. -1
+				if (maxHit < 0)
+				{
+					return;
+				}
+				String maxHitText = config.menuDisplayStyle() == NpcMaxHitConfig.MenuDisplayStyle.NUMBER_ONLY ?
+					String.format(" (%d)", maxHit) :
+					String.format(" (Max Hit: %d)", maxHit);
 
-		int maxHit = npcMaxHitData.get(0).getHighestMaxHit();
-		String menuEntry = "Max Hit: " + (maxHit >= 0 ? String.valueOf(maxHit) : "?");
-		client.getMenu().createMenuEntry(client.getMenu().getMenuEntries().length)
-			.setOption(menuEntry)
-			.onClick((entry) -> {
-				// Since we use lastHitsplatTime for timeout, we update it here as well
-				lastHitsplatTime = System.currentTimeMillis();
-				displayMaxHitData(npcMaxHitData);
-			});
+				String target = event.getTarget();
+				String colorTag = "<col=" + Integer.toHexString(config.menuMaxHitColor().getRGB() & 0xFFFFFF) + ">";
+				String newTarget = target + colorTag + maxHitText + "</col>";
+				menuEntry.setTarget(newTarget);
+			}
+		}
 	}
 
 	private void displayMaxHitData(List<NpcMaxHitData> dataList)
@@ -254,7 +273,7 @@ public class NpcMaxHitPlugin extends Plugin
 		}
 
 		// Update last hitsplat time
-		lastHitsplatTime = System.currentTimeMillis();
+		lastDisplayTime = System.currentTimeMillis();
 
 		// dont attempt to re-fetch data if the same npc is being attacked and overlay includes the npc
 		if (player.getInteracting() == npc && overlay.getCurrentNpcList().stream().anyMatch(data -> data.getNpcId() == npc.getId()))
@@ -270,7 +289,7 @@ public class NpcMaxHitPlugin extends Plugin
 	{
 		long currentTime = System.currentTimeMillis();
 		int timeoutMs = config.timeout() * 1000;
-		if (currentTime - lastHitsplatTime >= timeoutMs)
+		if (currentTime - lastDisplayTime >= timeoutMs)
 		{
 			if (!overlay.getCurrentNpcList().isEmpty())
 			{
@@ -302,7 +321,7 @@ public class NpcMaxHitPlugin extends Plugin
 		{
 			int npcId = Integer.parseInt(args[0]);
 
-			lastHitsplatTime = System.currentTimeMillis();
+			lastDisplayTime = System.currentTimeMillis();
 
 			fetchMaxHitData(npcId).thenAccept(this::displayMaxHitData);
 		}
