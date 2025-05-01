@@ -83,7 +83,6 @@ public class NpcMaxHitPlugin extends Plugin
 		overlayManager.remove(overlay);
 		overlay.updateNpcDataList(List.of());
 		removeInfoBox();
-
 	}
 
 	private void shutdownExecutor()
@@ -165,17 +164,18 @@ public class NpcMaxHitPlugin extends Plugin
 		boolean isAttackOption = event.getType() == MenuAction.NPC_SECOND_OPTION.getId() && event.getOption().equals("Attack");
 		boolean isExamineOption = event.getType() == MenuAction.EXAMINE_NPC.getId();
 
+		List<NpcMaxHitData> npcMaxHitData = wikiService.getCachedMaxHitData(npc.getId());
+		if (npcMaxHitData.isEmpty())
+		{
+			return;
+		}
 		// on examine click action
 		if (isExamineOption && config.displayMaxHitOnExamine())
 		{
-			List<NpcMaxHitData> npcMaxHitData = wikiService.getMaxHitData(npc.getId());
-			if (!npcMaxHitData.isEmpty())
-			{
-				menuEntry.onClick(me -> {
-					lastDisplayTime = System.currentTimeMillis();
-					displayMaxHitData(npcMaxHitData);
-				});
-			}
+			menuEntry.onClick(me -> {
+				lastDisplayTime = System.currentTimeMillis();
+				displayMaxHitData(npcMaxHitData);
+			});
 		}
 
 		// add max hit to enabled menu options
@@ -183,24 +183,20 @@ public class NpcMaxHitPlugin extends Plugin
 			((isAttackOption && config.showOnAttackOption()) ||
 				(isExamineOption && config.showOnExamineOption())))
 		{
-			List<NpcMaxHitData> npcMaxHitData = wikiService.getMaxHitData(npc.getId());
-			if (!npcMaxHitData.isEmpty())
+			int maxHit = npcMaxHitData.get(0).getHighestMaxHit();
+			// skip if max hit is not computed i.e. -1
+			if (maxHit < 0)
 			{
-				int maxHit = npcMaxHitData.get(0).getHighestMaxHit();
-				// skip if max hit is not computed i.e. -1
-				if (maxHit < 0)
-				{
-					return;
-				}
-				String maxHitText = config.menuDisplayStyle() == NpcMaxHitConfig.MenuDisplayStyle.NUMBER_ONLY ?
-					String.format(" (%d)", maxHit) :
-					String.format(" (Max Hit: %d)", maxHit);
-
-				String target = event.getTarget();
-				String colorTag = "<col=" + Integer.toHexString(config.menuMaxHitColor().getRGB() & 0xFFFFFF) + ">";
-				String newTarget = target + colorTag + maxHitText + "</col>";
-				menuEntry.setTarget(newTarget);
+				return;
 			}
+			String maxHitText = config.menuDisplayStyle() == NpcMaxHitConfig.MenuDisplayStyle.NUMBER_ONLY ?
+				String.format(" (%d)", maxHit) :
+				String.format(" (Max Hit: %d)", maxHit);
+
+			String target = event.getTarget();
+			String colorTag = "<col=" + Integer.toHexString(config.menuMaxHitColor().getRGB() & 0xFFFFFF) + ">";
+			String newTarget = target + colorTag + maxHitText + "</col>";
+			menuEntry.setTarget(newTarget);
 		}
 	}
 
@@ -314,6 +310,12 @@ public class NpcMaxHitPlugin extends Plugin
 		String[] args = event.getArguments();
 		if (args.length == 0)
 		{
+			return;
+		}
+
+		if (args[0].equals("clear"))
+		{
+			wikiService.clearCache();
 			return;
 		}
 

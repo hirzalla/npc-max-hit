@@ -146,4 +146,14 @@ public class WikiService
 			}
 		}
 	}
+
+	public List<NpcMaxHitData> getCachedMaxHitData(int npcId)
+	{
+		return maxHitCache.getOrDefault(npcId, Collections.emptyList());
+	}
+
+	public void clearCache()
+	{
+		maxHitCache.clear();
+	}
 }
