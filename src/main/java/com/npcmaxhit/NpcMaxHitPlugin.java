@@ -215,7 +215,7 @@ public class NpcMaxHitPlugin extends Plugin
 
 	private CompletableFuture<List<NpcMaxHitData>> fetchMaxHitData(int npcId)
 	{
-		return CompletableFuture.supplyAsync(() -> wikiService.getMaxHitData(npcId), executor);
+		return wikiService.getMaxHitData(npcId);
 	}
 
 	private boolean shouldFilterNpc(NPC npc)
