@@ -19,6 +19,7 @@ import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.CommandExecuted;
+import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
 import net.runelite.client.callback.ClientThread;
@@ -149,7 +150,7 @@ public class NpcMaxHitPlugin extends Plugin
 	@Subscribe
 	public void onMenuEntryAdded(MenuEntryAdded event)
 	{
-		if (!config.showInMenu() && !config.displayMaxHitOnExamine())
+		if (!config.showInMenu())
 		{
 			return;
 		}
@@ -168,14 +169,6 @@ public class NpcMaxHitPlugin extends Plugin
 		if (npcMaxHitData.isEmpty())
 		{
 			return;
-		}
-		// on examine click action
-		if (isExamineOption && config.displayMaxHitOnExamine())
-		{
-			menuEntry.onClick(me -> {
-				lastDisplayTime = System.currentTimeMillis();
-				displayMaxHitData(npcMaxHitData);
-			});
 		}
 
 		// add max hit to enabled menu options
@@ -197,6 +190,33 @@ public class NpcMaxHitPlugin extends Plugin
 			String colorTag = "<col=" + Integer.toHexString(config.menuMaxHitColor().getRGB() & 0xFFFFFF) + ">";
 			String newTarget = target + colorTag + maxHitText + "</col>";
 			menuEntry.setTarget(newTarget);
+		}
+	}
+
+	@Subscribe
+	public void onMenuOptionClicked(MenuOptionClicked event)
+	{
+		if (!config.displayMaxHitOnExamine())
+		{
+			return;
+		}
+
+		if (event.getMenuAction() != MenuAction.EXAMINE_NPC)
+		{
+			return;
+		}
+
+		NPC npc = event.getMenuEntry().getNpc();
+		if (npc == null || npc.getCombatLevel() <= 0 || shouldFilterNpc(npc))
+		{
+			return;
+		}
+
+		List<NpcMaxHitData> npcMaxHitData = wikiService.getCachedMaxHitData(npc.getId());
+		if (!npcMaxHitData.isEmpty())
+		{
+			lastDisplayTime = System.currentTimeMillis();
+			displayMaxHitData(npcMaxHitData);
 		}
 	}
 
