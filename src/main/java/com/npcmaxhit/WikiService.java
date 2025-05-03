@@ -38,9 +38,10 @@ public class WikiService
 	public CompletableFuture<List<NpcMaxHitData>> getMaxHitData(int npcId)
 	{
 		// Check cache first
-		if (maxHitCache.containsKey(npcId))
+		List<NpcMaxHitData> cached = maxHitCache.get(npcId);
+		if (cached != null)
 		{
-			return CompletableFuture.completedFuture(maxHitCache.get(npcId));
+			return CompletableFuture.completedFuture(cached);
 		}
 
 		// check for exinst inflight request for NPC ID

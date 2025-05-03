@@ -212,12 +212,8 @@ public class NpcMaxHitPlugin extends Plugin
 			return;
 		}
 
-		List<NpcMaxHitData> npcMaxHitData = wikiService.getCachedMaxHitData(npc.getId());
-		if (!npcMaxHitData.isEmpty())
-		{
-			lastDisplayTime = System.currentTimeMillis();
-			displayMaxHitData(npcMaxHitData);
-		}
+		fetchMaxHitData(npc.getId()).thenAccept(this::displayMaxHitData);
+
 	}
 
 	private void displayMaxHitData(List<NpcMaxHitData> dataList)
@@ -226,6 +222,8 @@ public class NpcMaxHitPlugin extends Plugin
 		{
 			return;
 		}
+
+		lastDisplayTime = System.currentTimeMillis();
 
 		clientThread.invoke(() -> {
 			overlay.updateNpcDataList(dataList);
@@ -288,12 +286,11 @@ public class NpcMaxHitPlugin extends Plugin
 			return;
 		}
 
-		// Update last hitsplat time
-		lastDisplayTime = System.currentTimeMillis();
-
 		// dont attempt to re-fetch data if the same npc is being attacked and overlay includes the npc
 		if (player.getInteracting() == npc && overlay.getCurrentNpcList().stream().anyMatch(data -> data.getNpcId() == npc.getId()))
 		{
+			// Update last hitsplat time
+			lastDisplayTime = System.currentTimeMillis();
 			return;
 		}
 
@@ -342,8 +339,6 @@ public class NpcMaxHitPlugin extends Plugin
 		try
 		{
 			int npcId = Integer.parseInt(args[0]);
-
-			lastDisplayTime = System.currentTimeMillis();
 
 			fetchMaxHitData(npcId).thenAccept(this::displayMaxHitData);
 		}
