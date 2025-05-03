@@ -23,6 +23,7 @@ import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
 import net.runelite.client.callback.ClientThread;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.SpriteManager;
@@ -34,7 +35,7 @@ import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 @Slf4j
 @PluginDescriptor(
 	name = "NPC Max Hit",
-	description = "Displays the max hits of the NPC you are fighting",
+	description = "Displays the max hits of NPCs",
 	tags = {"maxhit", "monster", "boss", "npc", "opponent", "hit", "damage", "overlay", "combat", "pvm", "pve", "max hit", "infobox"}
 )
 public class NpcMaxHitPlugin extends Plugin
@@ -140,7 +141,7 @@ public class NpcMaxHitPlugin extends Plugin
 	{
 		NPC npc = event.getNpc();
 
-		if (!config.showInMenu() || event.getActor().getCombatLevel() <= 0 || shouldFilterNpc(npc) || !npc.getComposition().isInteractible())
+		if (!config.showInMenu() || shouldFilterNpc(npc))
 		{
 			return;
 		}
@@ -150,6 +151,11 @@ public class NpcMaxHitPlugin extends Plugin
 	@Subscribe
 	public void onMenuEntryAdded(MenuEntryAdded event)
 	{
+		if (event.getTarget() == null || event.getTarget().isEmpty())
+		{
+			return;
+		}
+
 		if (!config.showInMenu())
 		{
 			return;
@@ -157,7 +163,7 @@ public class NpcMaxHitPlugin extends Plugin
 
 		MenuEntry menuEntry = event.getMenuEntry();
 		NPC npc = menuEntry.getNpc();
-		if (npc == null || npc.getCombatLevel() <= 0 || shouldFilterNpc(npc))
+		if (shouldFilterNpc(npc))
 		{
 			return;
 		}
@@ -207,7 +213,7 @@ public class NpcMaxHitPlugin extends Plugin
 		}
 
 		NPC npc = event.getMenuEntry().getNpc();
-		if (npc == null || npc.getCombatLevel() <= 0 || shouldFilterNpc(npc))
+		if (shouldFilterNpc(npc))
 		{
 			return;
 		}
@@ -238,6 +244,11 @@ public class NpcMaxHitPlugin extends Plugin
 
 	private boolean shouldFilterNpc(NPC npc)
 	{
+		if (npc == null || npc.getCombatLevel() <= 0 || !npc.getComposition().isInteractible())
+		{
+			return true;
+		}
+
 		int threshold = config.combatLevelThreshold();
 		if (threshold > 0 && npc.getCombatLevel() < threshold)
 		{
@@ -345,6 +356,29 @@ public class NpcMaxHitPlugin extends Plugin
 		catch (NumberFormatException e)
 		{
 			log.warn("Invalid command arguments", e);
+		}
+	}
+
+	@Subscribe
+	public void onConfigChanged(ConfigChanged event)
+	{
+		if (!event.getGroup().equals(NpcMaxHitConfig.GROUP))
+		{
+			return;
+		}
+
+		if (event.getKey().equals("showInMenu") && config.showInMenu())
+		{
+			clientThread.invoke(() -> {
+				for (NPC npc : client.getTopLevelWorldView().npcs())
+				{
+					if (!shouldFilterNpc(npc))
+					{
+						fetchMaxHitData(npc.getId());
+					}
+				}
+			});
+
 		}
 	}
 
