@@ -26,7 +26,7 @@ public class WikiService
 {
 	private static final String WIKI_API_URL = "https://oldschool.runescape.wiki/api.php?action=ask&format=json&query=[[NPC ID::%d]]|?Max hit";
 	private static final Pattern MAX_HIT_VALUE_PATTERN = Pattern.compile("(.+?)\\s*\\(([^)]+)\\)");
-	private final Map<Integer, List<NpcMaxHitData>> maxHitCache = new HashMap<>();
+	private final Map<Integer, List<NpcMaxHitData>> maxHitCache = new ConcurrentHashMap<>();
 	private final Map<Integer, CompletableFuture<List<NpcMaxHitData>>> inFlightRequests = new ConcurrentHashMap<>();
 
 	@Inject
