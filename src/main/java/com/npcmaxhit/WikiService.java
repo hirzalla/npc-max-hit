@@ -44,7 +44,7 @@ public class WikiService
 			return CompletableFuture.completedFuture(cached);
 		}
 
-		// check for exinst inflight request for NPC ID
+		// check for existing inflight request for NPC ID
 		return inFlightRequests.computeIfAbsent(npcId, id -> {
 			CompletableFuture<List<NpcMaxHitData>> future = new CompletableFuture<>();
 

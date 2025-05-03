@@ -9,9 +9,11 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 
-@ConfigGroup("npcmaxhit")
+@ConfigGroup(NpcMaxHitConfig.GROUP)
 public interface NpcMaxHitConfig extends Config
 {
+	String GROUP = "npcmaxhit";
+
 	@ConfigSection(
 		name = "General",
 		description = "General plugin settings",
