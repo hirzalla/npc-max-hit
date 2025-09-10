@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.HttpUrl;
 
 import java.util.HashMap;
 import java.util.List;
@@ -24,10 +25,10 @@ import java.util.regex.Pattern;
 @Singleton
 public class WikiService
 {
-	private static final String WIKI_API_URL = "https://oldschool.runescape.wiki/api.php?action=ask&format=json&query=[[NPC ID::%d]]|?Max hit";
+	private static final String WIKI_API_BASE = "https://oldschool.runescape.wiki/api.php";
+	private static final String BUCKET_QUERY = "bucket('infobox_monster').select('id','name','version_anchor','default_version','max_hit').limit(5000).run()";
 	private static final Pattern MAX_HIT_VALUE_PATTERN = Pattern.compile("(.+?)\\s*\\(([^)]+)\\)");
-	private final Map<Integer, List<NpcMaxHitData>> maxHitCache = new ConcurrentHashMap<>();
-	private final Map<Integer, CompletableFuture<List<NpcMaxHitData>>> inFlightRequests = new ConcurrentHashMap<>();
+	private final Map<String, List<NpcMaxHitData>> maxHitCache = new ConcurrentHashMap<>();
 
 	@Inject
 	private OkHttpClient httpClient;
@@ -35,106 +36,175 @@ public class WikiService
 	@Inject
 	private Gson gson;
 
-	public CompletableFuture<List<NpcMaxHitData>> getMaxHitData(int npcId)
+	public List<NpcMaxHitData> getMaxHitData(int npcId)
 	{
-		// Check cache first
-		List<NpcMaxHitData> cached = maxHitCache.get(npcId);
-		if (cached != null)
-		{
-			return CompletableFuture.completedFuture(cached);
-		}
+		return getMaxHitData(String.valueOf(npcId));
+	}
 
-		// check for existing inflight request for NPC ID
-		return inFlightRequests.computeIfAbsent(npcId, id -> {
-			CompletableFuture<List<NpcMaxHitData>> future = new CompletableFuture<>();
+	public List<NpcMaxHitData> getMaxHitData(String npcId)
+	{
+		return maxHitCache.getOrDefault(npcId, Collections.emptyList());
+	}
 
-			CompletableFuture.runAsync(() -> {
-				try
+	public CompletableFuture<Void> preloadAll()
+	{
+		return CompletableFuture.runAsync(() -> {
+			try
+			{
+				HttpUrl url = HttpUrl.parse(WIKI_API_BASE).newBuilder()
+					.addQueryParameter("action", "bucket")
+					.addQueryParameter("format", "json")
+					.addQueryParameter("query", BUCKET_QUERY)
+					.addQueryParameter("smaxage", "86400")
+					.build();
+
+				Request request = new Request.Builder()
+					.url(url)
+					.header("User-Agent", "RuneLite npc-max-hit plugin")
+					.header("Accept", "application/json")
+					.build();
+
+				try (Response response = httpClient.newCall(request).execute())
 				{
-					String url = String.format(WIKI_API_URL, id);
-					Request request = new Request.Builder()
-						.url(url)
-						.header("User-Agent", "RuneLite npc-max-hit plugin")
-						.build();
-
-					try (Response response = httpClient.newCall(request).execute())
+					if (response.isSuccessful() && response.body() != null)
 					{
-						List<NpcMaxHitData> results = Collections.emptyList();
-
-						if (response.isSuccessful() && response.body() != null)
-						{
-							results = parseWikiResponse(response.body().string(), id);
-							if (!results.isEmpty())
-							{
-								maxHitCache.put(id, results);
-							}
-						}
-
-						future.complete(results);
+						parseBucketResponseAndFillCache(response.body().string());
+					}
+					else
+					{
+						log.warn("Bucket API request failed: {}", response.code());
 					}
 				}
-				catch (Exception e)
-				{
-					log.warn("Error fetching wiki data for (ID: {}): {}", id, e.getMessage());
-					future.complete(Collections.emptyList());
-				}
-				finally
-				{
-					inFlightRequests.remove(id);
-				}
-			});
-
-			return future;
+			}
+			catch (Exception e)
+			{
+				log.warn("Error preloading bucket data: {}", e.getMessage());
+			}
 		});
 	}
 
-	private List<NpcMaxHitData> parseWikiResponse(String responseBody, int npcId)
+	private void parseBucketResponseAndFillCache(String responseBody)
 	{
 		JsonObject jsonResponse = gson.fromJson(responseBody, JsonObject.class);
-
-		if (!jsonResponse.has("query") || !jsonResponse.getAsJsonObject("query").has("results"))
+		if (jsonResponse == null || !jsonResponse.has("bucket"))
 		{
-			return Collections.emptyList();
+			return;
 		}
 
-		List<NpcMaxHitData> results = new ArrayList<>();
-		JsonObject resultsObj = jsonResponse.getAsJsonObject("query").getAsJsonObject("results");
+		Map<String, List<NpcMaxHitData>> temp = new HashMap<>();
 
-		for (Map.Entry<String, JsonElement> entry : resultsObj.entrySet())
+		for (JsonElement el : jsonResponse.getAsJsonArray("bucket"))
 		{
-			String fullName = entry.getKey();
-			JsonObject result = entry.getValue().getAsJsonObject();
-			JsonObject printouts = result.getAsJsonObject("printouts");
+			JsonObject obj = el.getAsJsonObject();
 
-			if (printouts.has("Max hit") && printouts.getAsJsonArray("Max hit").size() > 0)
+			List<String> idList = getAsStringList(obj, "id");
+			List<String> maxHitStrings = getAsStringList(obj, "max_hit");
+
+			String name = obj.has("name") && !obj.get("name").isJsonNull() ? obj.get("name").getAsString() : null;
+			String version = obj.has("version_anchor") && !obj.get("version_anchor").isJsonNull() ? obj.get("version_anchor").getAsString() : null;
+			boolean isDefault = obj.has("default_version");
+
+			Map<String, String> maxHits = new HashMap<>();
+			// each element may itself include <br/> or comma-separated values
+			for (String s : maxHitStrings)
 			{
-				Map<String, String> maxHits = new HashMap<>();
-				var maxHitArray = printouts.getAsJsonArray("Max hit");
+				if (s != null)
+				{
+					parseMaxHitValues(s, maxHits);
+				}
+			}
 
-				if (maxHitArray.size() > 1)
+			for (String idStr : idList)
+			{
+				if (idStr == null || idStr.trim().isEmpty())
 				{
-					// Process each element in the array directly
-					for (JsonElement maxHitElement : maxHitArray)
-					{
-						String maxHitString = maxHitElement.getAsString().trim();
-						parseMaxHitValues(maxHitString, maxHits);
-					}
+					continue;
 				}
-				else
-				{
-					// Single element - might contain multiple hits
-					String maxHitString = maxHitArray.get(0).getAsString();
-					parseMaxHitValues(maxHitString, maxHits);
-				}
-
-				if (!maxHits.isEmpty())
-				{
-					results.add(new NpcMaxHitData(fullName, npcId, maxHits));
-				}
+				String key = idStr.trim();
+				NpcMaxHitData data = new NpcMaxHitData(name, version, key, isDefault, maxHits);
+				temp.computeIfAbsent(key, k -> new ArrayList<>()).add(data);
 			}
 		}
 
-		return results;
+		maxHitCache.clear();
+
+		// de-dupe per-id by identical maxHits; if a default version exists in a group, keep only that
+		for (Map.Entry<String, List<NpcMaxHitData>> e : temp.entrySet())
+		{
+			Map<String, List<NpcMaxHitData>> byHits = new HashMap<>();
+			for (NpcMaxHitData d : e.getValue())
+			{
+				String key = canonicalizeMaxHits(d.getMaxHits());
+				byHits.computeIfAbsent(key, k -> new ArrayList<>()).add(d);
+			}
+
+			List<NpcMaxHitData> filtered = new ArrayList<>();
+			for (List<NpcMaxHitData> group : byHits.values())
+			{
+				NpcMaxHitData chosen = group.stream().filter(NpcMaxHitData::isDefaultVersion).findFirst().orElse(group.get(0));
+				filtered.add(chosen);
+			}
+
+			// order: default version first, then by version name (if present)
+			filtered.sort((a, b) -> {
+				if (a.isDefaultVersion() != b.isDefaultVersion())
+				{
+					return a.isDefaultVersion() ? -1 : 1;
+				}
+				String va = a.getVersion();
+				String vb = b.getVersion();
+				if (va == null && vb == null)
+				{
+					return 0;
+				}
+				if (va == null)
+				{
+					return 1;
+				}
+				if (vb == null)
+				{
+					return -1;
+				}
+				return va.compareToIgnoreCase(vb);
+			});
+
+			maxHitCache.put(e.getKey(), filtered);
+		}
+	}
+
+	private String canonicalizeMaxHits(Map<String, String> maxHits)
+	{
+		// sort keys case-insensitively and build a stable string
+		StringBuilder sb = new StringBuilder();
+		maxHits.keySet().stream().sorted(String::compareToIgnoreCase).forEach(k -> {
+			sb.append(k.toLowerCase()).append('=').append(maxHits.get(k).trim()).append(';');
+		});
+		return sb.toString();
+	}
+
+	private List<String> getAsStringList(JsonObject obj, String key)
+	{
+		List<String> out = new ArrayList<>();
+		if (!obj.has(key) || obj.get(key).isJsonNull())
+		{
+			return out;
+		}
+		JsonElement el = obj.get(key);
+		if (el.isJsonArray())
+		{
+			for (JsonElement e : el.getAsJsonArray())
+			{
+				if (!e.isJsonNull())
+				{
+					out.add(e.getAsString());
+				}
+			}
+		}
+		else
+		{
+			out.add(el.getAsString());
+		}
+		return out;
 	}
 
 	private void parseMaxHitValues(String maxHitString, Map<String, String> maxHits)
@@ -166,11 +236,6 @@ public class WikiService
 				}
 			}
 		}
-	}
-
-	public List<NpcMaxHitData> getCachedMaxHitData(int npcId)
-	{
-		return maxHitCache.getOrDefault(npcId, Collections.emptyList());
 	}
 
 	public void clearCache()

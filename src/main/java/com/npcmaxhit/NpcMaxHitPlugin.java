@@ -2,10 +2,6 @@ package com.npcmaxhit;
 
 import com.google.inject.Provides;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.CompletableFuture;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
@@ -13,9 +9,9 @@ import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Hitsplat;
 import net.runelite.api.NPC;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.MenuEntryAdded;
-import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.CommandExecuted;
@@ -42,7 +38,6 @@ public class NpcMaxHitPlugin extends Plugin
 {
 	private Actor player;
 	private long lastDisplayTime = 0;
-	private ExecutorService executor;
 
 	@Inject
 	private Client client;
@@ -73,39 +68,18 @@ public class NpcMaxHitPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		executor = Executors.newSingleThreadExecutor();
 		overlay.updateNpcDataList(List.of());
 		overlayManager.add(overlay);
+		wikiService.preloadAll();
 	}
 
 	@Override
 	protected void shutDown()
 	{
-		shutdownExecutor();
 		overlayManager.remove(overlay);
 		overlay.updateNpcDataList(List.of());
 		removeInfoBox();
-	}
-
-	private void shutdownExecutor()
-	{
-		if (executor != null)
-		{
-			executor.shutdown();
-			try
-			{
-				if (!executor.awaitTermination(1, TimeUnit.SECONDS))
-				{
-					executor.shutdownNow();
-				}
-			}
-			catch (InterruptedException e)
-			{
-				executor.shutdownNow();
-				Thread.currentThread().interrupt();
-			}
-			executor = null;
-		}
+		wikiService.clearCache();
 	}
 
 	private void removeInfoBox()
@@ -137,18 +111,6 @@ public class NpcMaxHitPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onNpcSpawned(NpcSpawned event)
-	{
-		NPC npc = event.getNpc();
-
-		if (!config.showInMenu() || shouldFilterNpc(npc))
-		{
-			return;
-		}
-		fetchMaxHitData(npc.getId());
-	}
-
-	@Subscribe
 	public void onMenuEntryAdded(MenuEntryAdded event)
 	{
 		if (event.getTarget() == null || event.getTarget().isEmpty())
@@ -171,7 +133,7 @@ public class NpcMaxHitPlugin extends Plugin
 		boolean isAttackOption = event.getType() == MenuAction.NPC_SECOND_OPTION.getId() && event.getOption().equals("Attack");
 		boolean isExamineOption = event.getType() == MenuAction.EXAMINE_NPC.getId();
 
-		List<NpcMaxHitData> npcMaxHitData = wikiService.getCachedMaxHitData(npc.getId());
+		List<NpcMaxHitData> npcMaxHitData = wikiService.getMaxHitData(npc.getId());
 		if (npcMaxHitData.isEmpty())
 		{
 			return;
@@ -218,7 +180,7 @@ public class NpcMaxHitPlugin extends Plugin
 			return;
 		}
 
-		fetchMaxHitData(npc.getId()).thenAccept(this::displayMaxHitData);
+		displayMaxHitData(wikiService.getMaxHitData(npc.getId()));
 
 	}
 
@@ -235,11 +197,6 @@ public class NpcMaxHitPlugin extends Plugin
 			overlay.updateNpcDataList(dataList);
 			updateInfoBox(dataList);
 		});
-	}
-
-	private CompletableFuture<List<NpcMaxHitData>> fetchMaxHitData(int npcId)
-	{
-		return wikiService.getMaxHitData(npcId);
 	}
 
 	private boolean shouldFilterNpc(NPC npc)
@@ -297,15 +254,14 @@ public class NpcMaxHitPlugin extends Plugin
 			return;
 		}
 
-		// dont attempt to re-fetch data if the same npc is being attacked and overlay includes the npc
-		if (player.getInteracting() == npc && overlay.getCurrentNpcList().stream().anyMatch(data -> data.getNpcId() == npc.getId()))
+		// update timestamp if the same npc is being attacked and overlay includes the npc
+		if (player.getInteracting() == npc && overlay.getCurrentNpcList().stream().anyMatch(data -> data.getNpcId().equals(String.valueOf(npc.getId()))))
 		{
-			// Update last hitsplat time
 			lastDisplayTime = System.currentTimeMillis();
 			return;
 		}
 
-		fetchMaxHitData(npc.getId()).thenAccept(this::displayMaxHitData);
+		displayMaxHitData(wikiService.getMaxHitData(npc.getId()));
 	}
 
 	@Subscribe
@@ -347,16 +303,29 @@ public class NpcMaxHitPlugin extends Plugin
 			return;
 		}
 
+		if (args[0].equals("refresh"))
+		{
+			clientThread.invoke(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "npc-max-hit: refreshing cache…", null));
+			wikiService.clearCache();
+			wikiService.preloadAll().thenRun(() -> {
+				log.info("npc-max-hit: cache refreshed");
+				clientThread.invoke(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "npc-max-hit: cache refreshed", null));
+			});
+			return;
+		}
+
+		String idArg = args[0].trim();
+		List<NpcMaxHitData> maxHitData;
 		try
 		{
-			int npcId = Integer.parseInt(args[0]);
-
-			fetchMaxHitData(npcId).thenAccept(this::displayMaxHitData);
+			int npcId = Integer.parseInt(idArg);
+			maxHitData = wikiService.getMaxHitData(npcId);
 		}
 		catch (NumberFormatException e)
 		{
-			log.warn("Invalid command arguments", e);
+			maxHitData = wikiService.getMaxHitData(idArg);
 		}
+		displayMaxHitData(maxHitData);
 	}
 
 	@Subscribe
@@ -365,20 +334,6 @@ public class NpcMaxHitPlugin extends Plugin
 		if (!event.getGroup().equals(NpcMaxHitConfig.GROUP))
 		{
 			return;
-		}
-
-		if (event.getKey().equals("showInMenu") && config.showInMenu())
-		{
-			clientThread.invoke(() -> {
-				for (NPC npc : client.getTopLevelWorldView().npcs())
-				{
-					if (!shouldFilterNpc(npc))
-					{
-						fetchMaxHitData(npc.getId());
-					}
-				}
-			});
-
 		}
 	}
 
